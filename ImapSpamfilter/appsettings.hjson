@@ -1,0 +1,8 @@
+﻿{
+    ImapServer                      : "imap.1blu.de",
+    ImapPort                        : 993,
+    Username                        : "c263677_0-ciridata",
+    Password                        : "mf##ye34#oFW#tujaA7HIxHd#",
+    InboxFolderName                 : "inbox",
+    SpamFolderName                  : "junk-e-mail",
+}
