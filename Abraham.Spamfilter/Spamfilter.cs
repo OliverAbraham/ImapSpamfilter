@@ -4,6 +4,44 @@ using System.Linq;
 
 namespace Abraham.Spamfilter
 {
+    /// <summary>
+    /// SPAMFILTER ENGINE
+    /// 
+    /// This is the business logic for Spamfilter implementation.
+    /// 
+    /// 
+    /// FUNCTIONING
+    /// 
+    /// Its able to classify any given email by a set of rules.
+    /// Rules are basic now. They are three lists and some fixed rules.
+    /// The lists are: 
+    ///     - a sender white list
+    ///     - a sender black list 
+    ///     - a subject black list
+    /// 
+    /// The rules are processed in the following order.
+    /// An email is spam, when:
+    ///     - if the sender contains one of the sender blacklist words (you can whitelist all senders of a domain, e.g. "@mydomain.com")
+    ///     - if more than half of the subject characters are non-latin (hard coded)
+    ///     - if the sender email address contains more than a given number of special characters (configurable)
+    ///     - if the sender address without punctuation contains more than a given number of special characters (configurable)
+    ///     - if the subject contains one of the subject blacklist words
+    ///
+    /// 
+    /// AUTHOR
+    /// Written by Oliver Abraham, mail@oliver-abraham.de
+    /// 
+    /// 
+    /// INSTALLATION AND CONFIGURATION
+    /// See README.md in the project root folder.
+    /// 
+    /// 
+    /// LICENSE
+    /// This project is licensed under Apache license.
+    /// 
+    /// 
+    /// SOURCE CODE
+    /// https://www.github.com/OliverAbraham/Spamfilter
 	public class Spamfilter
 	{
 		#region ------------- Properties ----------------------------------------------------------
@@ -14,16 +52,25 @@ namespace Abraham.Spamfilter
 
 		#region ------------- Fields --------------------------------------------------------------
 		private const string _latinCharacters = "abcdefghijklmnopqrstuvwxyzäöüßABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß01234567890<>|,;.:-_#'+*~´`ß?\\!\"§$%&/()=";
-		#endregion
+        #endregion
 
 
 
-		#region ------------- Init ----------------------------------------------------------------
+        #region ------------- Init ----------------------------------------------------------------
+        public Spamfilter()
+        {
+        }
 		#endregion
 
 
 
 		#region ------------- Methods -------------------------------------------------------------
+        public Spamfilter UseConfiguration(Configuration configuration)
+        {
+            Configuration = configuration;
+            return this;
+        }
+
 		public Classification ClassifyEmail(string subject, string body, string senderName, string senderEMail)
 		{
             if (Configuration == null)
@@ -40,9 +87,15 @@ namespace Abraham.Spamfilter
             var senderNameWithoutPunctuation = RemoveAllPunctuationCharactersFrom(senderName);
             var subjectWithoutPunctuation    = RemoveAllPunctuationCharactersFrom(subject);
 
-            if (Configuration.SenderWhitelist.Contains(senderEMail))
+            if (Configuration.SenderWhitelist.Contains(senderEMail.ToLower()))
             {
-                return new Classification(false, $"Sender white list contains this sender ({senderEMail})");
+                return new Classification(false, $"Sender white list contains the exact sender name ({senderEMail})");
+            }
+
+            foreach(var sender in Configuration.SenderWhitelist)
+            {
+                if (senderEMail.Contains(sender.ToLower()))
+                    return new Classification(false, $"Sender white list contains a part of this sender ({senderEMail})");
             }
 
             // If more than half of the characters are non-latin, this is spam

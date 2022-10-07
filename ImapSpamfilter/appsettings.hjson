@@ -1,8 +1,11 @@
 ﻿{
     ImapServer                      : "imap.1blu.de",
     ImapPort                        : 993,
-    Username                        : "c263677_0-ciridata",
-    Password                        : "mf##ye34#oFW#tujaA7HIxHd#",
+    Username                        : "c263677_1-mail",
+    Password                        : "marion208~",
     InboxFolderName                 : "inbox",
-    SpamFolderName                  : "junk-e-mail",
+    SpamFolderName                  : "junk",
+    CheckIntervalMinutes            : 1,
+    ReCheckEveryUnreadMessage       : false,
+    SpamfilterRules                 : "spamfilter-configuration.hjson"
 }

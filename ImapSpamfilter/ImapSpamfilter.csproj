@@ -5,6 +5,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <LangVersion>11.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,11 +14,13 @@
 
   <ItemGroup>
     <PackageReference Include="Abraham.Mail" Version="1.0.0" />
-    <PackageReference Include="Abraham.ProgramSettingsManager" Version="1.0.1" />
+    <PackageReference Include="Abraham.ProgramSettingsManager" Version="1.0.2" />
     <PackageReference Include="Abraham.Scheduler" Version="1.0.0" />
-    <PackageReference Include="NLog" Version="5.0.2" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="5.0.2" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="5.1.1" />
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
+    <PackageReference Include="NLog" Version="5.0.4" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.0.4" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.1.4" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +32,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="NLog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="spamfilter-configuration.hjson">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
