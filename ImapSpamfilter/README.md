@@ -3,9 +3,10 @@
 ## OVERVIEW
 
 
-This is a Spamfilter for IMAP postboxes.
-It works independently from your email client.
+This is a Spamfilter for IMAP postboxes, working independently from your email client.
 It will work with every mail server, as it need no special functionality.
+It will even work on a server and does not need to run on the client.
+This opens up more possibilities.
 
 
 ## FUNCTIONING
