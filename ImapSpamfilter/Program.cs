@@ -70,7 +70,8 @@ namespace ImapSpamfilter
         private static IMailFolder _spamFolder;
         private static MemoryCache _alreadyCheckedEmails;
         private static MemoryCacheEntryOptions _cacheEntryOptions;
-
+        private static DateTime _spamfilterConfigFileLastWriteTime = default(DateTime);
+        private static Abraham.Spamfilter.Configuration _spamfilterConfiguration;
         #endregion
 
 
@@ -294,21 +295,43 @@ namespace ImapSpamfilter
         {
             if (!emails.Any())
             {
-                _logger.Debug("no emails");
+                _logger.Debug("no new emails");
                 return;
             }
 
-            var spamfilterConfiguration = new ProgramSettingsManager<Abraham.Spamfilter.Configuration>()
-                .UseFullPathAndFilename(_config.SpamfilterRules)
-                .Load()
-                .Data;
+            LoadOrReloadRules();
 
-            var spamfilter = new Spamfilter()
-                .UseConfiguration(spamfilterConfiguration);
+            var spamfilter = new Spamfilter().UseConfiguration(_spamfilterConfiguration);
 
-            foreach(var email in emails)
+            foreach (var email in emails)
             {
                 CheckOneEmailAndMoveItToSpamfolder(spamfilter, email);
+            }
+        }
+
+        private static void LoadOrReloadRules()
+        {
+            // If the config file was changed, we re-read it and process all unread mails in the inbox
+            // Already processed unread emails will be re-processed when you changes the rules.
+            // Thats handy because you don't have to restart the application after you changed a rule.
+            var currentWriteTime = File.GetLastWriteTime(_config.SpamfilterRules);
+            var configFileHasChanged = currentWriteTime != _spamfilterConfigFileLastWriteTime;
+            var thisIsTheFirstTime = _spamfilterConfiguration is null;
+
+            if (thisIsTheFirstTime || configFileHasChanged)
+            {
+                if (thisIsTheFirstTime)
+                    _logger.Debug("Loading the spamfilter rules from file '_config.SpamfilterRules'");
+                else
+                    _logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
+
+                _spamfilterConfiguration = new ProgramSettingsManager<Abraham.Spamfilter.Configuration>()
+                    .UseFullPathAndFilename(_config.SpamfilterRules)
+                    .Load()
+                    .Data;
+                _spamfilterConfigFileLastWriteTime = currentWriteTime;
+
+                ForgetAlreadyProcessedEmails();
             }
         }
 
@@ -333,7 +356,7 @@ namespace ImapSpamfilter
             }
             else
             {
-                _logger.Debug($"    - OK  : {Format(email)}");
+                _logger.Debug($"    - OK  : {Format(email)}   Reason: {classification.Reason}");
             }
         }
 
@@ -351,6 +374,11 @@ namespace ImapSpamfilter
             _cacheEntryOptions = new MemoryCacheEntryOptions()
                 .SetSize(1)
                 .SetSlidingExpiration(TimeSpan.FromDays(1));
+        }
+
+        private static void ForgetAlreadyProcessedEmails()
+        {
+            InitCache();
         }
 
         private static bool WeAlreadyCheckedThis(Message email)

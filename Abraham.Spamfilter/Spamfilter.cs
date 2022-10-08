@@ -92,9 +92,10 @@ namespace Abraham.Spamfilter
                 return new Classification(false, $"Sender white list contains the exact sender name ({senderEMail})");
             }
 
+            var senderEmailAllLower = senderEMail.ToLower();
             foreach(var sender in Configuration.SenderWhitelist)
             {
-                if (senderEMail.Contains(sender.ToLower()))
+                if (senderEmailAllLower.Contains(sender.ToLower()))
                     return new Classification(false, $"Sender white list contains a part of this sender ({senderEMail})");
             }
 
@@ -136,14 +137,10 @@ namespace Abraham.Spamfilter
                 return new Classification(true, $"{specialCharactersSubject2.Details}");
             }
 
-            if (Configuration.SenderBlacklist.Contains(senderEMail.ToLower()))
-            {
-                return new Classification(true, $"the sender email is on the blacklist");
-            }
-
+            var senderNameAllLower = senderName.ToLower();
             foreach (var blacklistWord in Configuration.SenderBlacklist)
             {
-                if (senderName.ToLower().Contains(blacklistWord.ToLower()))
+                if (senderNameAllLower.Contains(blacklistWord.ToLower()))
                 {
                     return new Classification(true, $"the sender name contains the blacklisted word '{blacklistWord}'");
                 }

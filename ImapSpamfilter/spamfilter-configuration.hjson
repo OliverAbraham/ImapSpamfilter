@@ -1,10 +1,8 @@
 ﻿{
-    AllowedCharactersForEmailSendersAndSubjects: 
-		"01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
-    
-    SpecialCharactersSenderEmailThreshold: 5,
-    SpecialCharactersSenderNameThreshold : 5,
-    SpecialCharactersSubjectThreshold    : 5,
+    AllowedCharactersForEmailSendersAndSubjects: "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
+    SpecialCharactersSenderEmailThreshold      : 5,
+    SpecialCharactersSenderNameThreshold       : 5,
+    SpecialCharactersSubjectThreshold          : 5,
 
     SenderWhitelist: 
 	[
