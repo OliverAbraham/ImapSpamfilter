@@ -4,15 +4,14 @@
 
 
 This is a Spamfilter for IMAP postboxes.
-It works independently from yout email client.
+It works independently from your email client.
 It will work with every mail server, as it need no special functionality.
 
 
 ## FUNCTIONING
 
-It will connect periodcally to your imap mail server and check every new(unread) email.
-If it's classified as spam, it will move it from the inbox to another folder in your postbox.
-If you use an imap mail client on your computer, it will automatically update its content.
+It will connect periodically to your imap mail server and check every new(unread) email in your inbox.
+If it's classified as spam, it will move it to a folder in your postbox.
 
 The filter rules are configured in a hjson file. (see my example)
 Its able to classify any given email by a set of rules.
@@ -30,6 +29,15 @@ An email is spam when:
     - if the sender address without punctuation contains more than a given number of special characters (configurable)
     - if the subject contains one of the subject blacklist words
     
+
+## A NOTE ON OUTLOOK
+If you use outlook as imap mail client on your computer, it will automatically update its content 
+after some time, depending on the reload cycle.
+Normally you will see the spam mail disappering from your inbox, quite after the spamfilter had 
+classified an mail as spam. 
+And some minutes later at your spam folder, the number of unread emails will increase. 
+Outlook refreshes the subscribed imap folders o a regular basis, but slower than the inbox update.
+
 
 ## AUTHOR
 Written by Oliver Abraham, mail@oliver-abraham.de

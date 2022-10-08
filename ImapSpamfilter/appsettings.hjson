@@ -1,8 +1,8 @@
 ﻿{
     ImapServer                      : "imap.1blu.de",
     ImapPort                        : 993,
-    Username                        : "c263677_1-mail",
-    Password                        : "marion208~",
+    Username                        : "YOUR ACCOUNT USERNAME OR EMAIL ADDRESS",
+    Password                        : "YOUR ACCOUNT PASSWORD",
     InboxFolderName                 : "inbox",
     SpamFolderName                  : "junk",
     CheckIntervalMinutes            : 1,
