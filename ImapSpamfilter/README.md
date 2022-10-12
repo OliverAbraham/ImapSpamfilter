@@ -49,7 +49,7 @@ An installer is not provided
 - Build the application
 - Edit appsettings.hjson (basic settings)
 - Edit spamfilter-configuration.hjson (filter rules)
-- Edit nlog.config only if necessary. You can set the log rotation here.
+- Edit nlog.config (optional) You can set the log rotation here, for example). For more information refer to https://nlog-project.org/
 
 
 ## LICENSE

@@ -1,43 +1,65 @@
 ﻿{
-    AllowedCharactersForEmailSendersAndSubjects: "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
-    SpecialCharactersSenderEmailThreshold      : 5,
-    SpecialCharactersSenderNameThreshold       : 5,
-    SpecialCharactersSubjectThreshold          : 5,
+    MailAccounts: [
+    {
+        ImapServer                 : "",
+        ImapPort                   : "",
+        Username                   : "",
+        Password                   : "",
+        InboxFolderName            : "",
+        SpamFolderName             : "",
+        ReCheckEveryUnreadMessage  : "",
+        Rules: [
+        {                             
+            Name              : "Spamcheck",
+            IfMailIsSpam      : true,
+            Actions           : [ { Type: "MoveToFolder" } ]
+            SpamfilterSettings: [
+            {
+                SpecialCharacterWhitelist            : "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
+                CharacterWhitelist                   : "abcdefghijklmnopqrstuvwxyzäöüßABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß01234567890<>|,;.:-_#'+*~´`ß?\\!\"§$%&/()=",
+                SpecialCharactersSenderEmailThreshold: 5,
+                SpecialCharactersSenderNameThreshold : 5,
+                SpecialCharactersSubjectThreshold    : 5,
 
-    SenderWhitelist: 
-	[
-        "mail@example.com",
-    ],
+                SenderWhitelist: 
+	            [
+                    "mail@example.com",
+                ],
 
-    SenderBlacklist: 
-    [ 
-        "aliexpress",
-        "bitcoin",
-        "crypto",
-        "krypto",
-        "coinbase",
-		"wallet",
-        "exklusives",
-        "lotto",
-        "hotel",
-		"norton",
-		"investment",
-		"key account",
-		"instagram",
-		"linkedin",
-		"mozilla",
-		"xing",
-		"trello",
-		"jellybean",
-		"blessing",
-	],
+                SenderBlacklist: 
+                [ 
+                    "aliexpress",
+                    "bitcoin",
+                    "crypto",
+                    "krypto",
+                    "coinbase",
+		            "wallet",
+                    "exklusives",
+                    "lotto",
+                    "hotel",
+		            "norton",
+		            "investment",
+		            "key account",
+		            "instagram",
+		            "linkedin",
+		            "mozilla",
+		            "xing",
+		            "trello",
+		            "jellybean",
+		            "blessing",
+	            ],
 
-    SubjectBlacklist:
-    [ 
-        "bitcoin",
-        "crypto",
-        "krypto",
-        "invest",
-        "penis",
-    ],
-}
+                SubjectBlacklist:
+                [ 
+                    "bitcoin",
+                    "crypto",
+                    "krypto",
+                    "invest",
+                    "penis",
+                ],
+            }
+        }
+        ]
+    }
+    ]
+}                             

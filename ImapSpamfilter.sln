@@ -5,7 +5,7 @@ VisualStudioVersion = 17.4.32916.344
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImapSpamfilter", "ImapSpamfilter\ImapSpamfilter.csproj", "{E6F4AA69-F930-4036-963B-A3D00299C0A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Abraham.Spamfilter", "Abraham.Spamfilter\Abraham.Spamfilter.csproj", "{79BCB14A-FB13-4272-AC01-FD69F13F2B98}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Abraham.MailRuleEngine", "Abraham.MailRuleEngine\Abraham.MailRuleEngine.csproj", "{10B9A2D2-1B80-4BCA-8510-8E5752521F08}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{E6F4AA69-F930-4036-963B-A3D00299C0A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E6F4AA69-F930-4036-963B-A3D00299C0A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E6F4AA69-F930-4036-963B-A3D00299C0A6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{79BCB14A-FB13-4272-AC01-FD69F13F2B98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{79BCB14A-FB13-4272-AC01-FD69F13F2B98}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{79BCB14A-FB13-4272-AC01-FD69F13F2B98}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{79BCB14A-FB13-4272-AC01-FD69F13F2B98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

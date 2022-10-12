@@ -1,11 +1,8 @@
-﻿using Abraham.Mail;
-using Abraham.ProgramSettingsManager;
+﻿using Abraham.ProgramSettingsManager;
 using Abraham.Scheduler;
 using NLog.Web;
 using CommandLine;
-using Abraham.Spamfilter;
-using MailKit;
-using MimeKit.Text;
+using Abraham.MailRuleEngine;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace ImapSpamfilter
@@ -65,13 +62,9 @@ namespace ImapSpamfilter
         private static Configuration _config;
         private static NLog.Logger _logger;
         private static Scheduler _scheduler;
-        private static ImapClient? _client;
-        private static IMailFolder _inboxFolder;
-        private static IMailFolder _spamFolder;
-        private static MemoryCache _alreadyCheckedEmails;
-        private static MemoryCacheEntryOptions _cacheEntryOptions;
         private static DateTime _spamfilterConfigFileLastWriteTime = default(DateTime);
-        private static Abraham.Spamfilter.Configuration _spamfilterConfiguration;
+        private static Spamfilter _spamfilter;
+        private static bool _thisIsTheFirstTime = true;
         #endregion
 
 
@@ -101,7 +94,6 @@ namespace ImapSpamfilter
         #region ------------- Init ----------------------------------------------------------------
         public static void Main(string[] args)
         {
-            InitCache();
 	        ParseCommandLineArguments();
     	    ReadConfiguration();
             ValidateConfiguration();
@@ -215,6 +207,8 @@ namespace ImapSpamfilter
         #region ------------- Periodic actions ----------------------------------------------------
         private static void StartScheduler()
         {
+            _spamfilter = new Spamfilter().UseLogger(_logger);
+
             // set the interval to 2 seconds
             _scheduler = new Scheduler()
                 .UseAction(() => PeriodicJob())
@@ -230,7 +224,7 @@ namespace ImapSpamfilter
 
         private static void PeriodicJob()
         {
-            ProcessAllNewEmails();
+            ProcessRules();
         }
         #endregion
 
@@ -242,71 +236,23 @@ namespace ImapSpamfilter
             Console.ReadKey();
         }
 
-        private static void ProcessAllNewEmails()
+        private static void ProcessRules()
         {
-            _logger.Debug($"Reading and classifying unread mails from '{_config.InboxFolderName}'...");
-
             try
             {
-                OpenPostbox();
-                LoadNecessaryFolders();
-                var unreadEmails = _client.GetUnreadMessagesFromFolder(_inboxFolder).ToList();
-                CheckEmailsForSpam(unreadEmails);
+                LoadConfigFileAndProcessRules();
             }
             catch (Exception ex) 
             {
                 _logger.Error($"Error with the imap server: {ex}");
             }
-            finally
-            {
-                ClosePostbox();
-            }
         }
 
-        private static void OpenPostbox()
+        private static void LoadConfigFileAndProcessRules()
         {
-            _client = new ImapClient()
-                .UseHostname(_config.ImapServer)
-                .UsePort(_config.ImapPort)
-                .UseSecurityProtocol(Security.Ssl)
-                .UseAuthentication(_config.Username, _config.Password)
-                .Open();
-        }
-
-        private static void ClosePostbox()
-        {
-            _client?.Close();
-        }
-
-        private static void LoadNecessaryFolders()
-        {
-            var folders = _client.GetAllFolders().ToList();
-
-            _inboxFolder = _client.GetFolderByName(folders, _config.InboxFolderName);
-            if (_inboxFolder is null)
-                throw new Exception($"Error getting the folder named '{_config.InboxFolderName}' from your imap server");
-
-            _spamFolder = _client.GetFolderByName(folders, _config.SpamFolderName);
-            if (_spamFolder is null)
-                throw new Exception($"Error getting the folder named '{_config.SpamFolderName}' from your imap server");
-        }
-
-        private static void CheckEmailsForSpam(List<Message> emails)
-        {
-            if (!emails.Any())
-            {
-                _logger.Debug("no new emails");
-                return;
-            }
-
+            _logger.Debug($"Processing rules...");
             LoadOrReloadRules();
-
-            var spamfilter = new Spamfilter().UseConfiguration(_spamfilterConfiguration);
-
-            foreach (var email in emails)
-            {
-                CheckOneEmailAndMoveItToSpamfolder(spamfilter, email);
-            }
+            _spamfilter.CheckAllRules();
         }
 
         private static void LoadOrReloadRules()
@@ -316,85 +262,20 @@ namespace ImapSpamfilter
             // Thats handy because you don't have to restart the application after you changed a rule.
             var currentWriteTime = File.GetLastWriteTime(_config.SpamfilterRules);
             var configFileHasChanged = currentWriteTime != _spamfilterConfigFileLastWriteTime;
-            var thisIsTheFirstTime = _spamfilterConfiguration is null;
 
-            if (thisIsTheFirstTime || configFileHasChanged)
+            if (_thisIsTheFirstTime || configFileHasChanged)
             {
-                if (thisIsTheFirstTime)
+                _thisIsTheFirstTime = false;
+                if (_thisIsTheFirstTime)
                     _logger.Debug("Loading the spamfilter rules from file '_config.SpamfilterRules'");
                 else
                     _logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
 
-                _spamfilterConfiguration = new ProgramSettingsManager<Abraham.Spamfilter.Configuration>()
-                    .UseFullPathAndFilename(_config.SpamfilterRules)
-                    .Load()
-                    .Data;
+                _spamfilter.LoadConfigurationFromFile(_config.SpamfilterRules);
                 _spamfilterConfigFileLastWriteTime = currentWriteTime;
 
-                ForgetAlreadyProcessedEmails();
+                _spamfilter.ForgetAlreadyProcessedEmails();
             }
-        }
-
-        private static void CheckOneEmailAndMoveItToSpamfolder(Spamfilter spamfilter, Message email)
-        {
-            if (WeAlreadyCheckedThis(email))
-                return;
-
-            var senderName    = email.Msg.From.ToString();
-            var senderAddress = email.Msg.From.ToString();
-            var subject       = email.Msg.Subject ?? "";
-            var body          = email.Msg.GetTextBody(TextFormat.Html)
-                             ?? email.Msg.GetTextBody(TextFormat.Text)
-                             ?? email.Msg.GetTextBody(TextFormat.Plain) 
-                             ?? "";
-            
-            var classification = spamfilter.ClassifyEmail(subject, body, senderName, senderAddress);
-            if (classification.EmailIsSpam)
-            { 
-                _client.MoveEmailToFolder(email, _inboxFolder, _spamFolder);
-                _logger.Info ($"    - SPAM: {Format(email)}   Reason: {classification.Reason}");
-            }
-            else
-            {
-                _logger.Debug($"    - OK  : {Format(email)}   Reason: {classification.Reason}");
-            }
-        }
-
-        private static string Format(Message email)
-        {
-            var date    = email.Msg.Date   .ToLocalTime().ToString("dd.MM.yyyy  HH:mm:ss");
-            var from    = email.Msg.From   .ToString().PadRight(40).Substring(0,40);
-            var subject = email.Msg.Subject.ToString().PadRight(60).Substring(0,60);
-            return $"{date,-22}    {from}     {subject}";
-        }
- 
-        private static void InitCache()
-        {
-            _alreadyCheckedEmails = new MemoryCache(new MemoryCacheOptions() { SizeLimit = 10_000 });
-            _cacheEntryOptions = new MemoryCacheEntryOptions()
-                .SetSize(1)
-                .SetSlidingExpiration(TimeSpan.FromDays(1));
-        }
-
-        private static void ForgetAlreadyProcessedEmails()
-        {
-            InitCache();
-        }
-
-        private static bool WeAlreadyCheckedThis(Message email)
-        {
-            // Firstly we check if we've already processed this message
-            if (!_config.ReCheckEveryUnreadMessage)
-            {
-                // We build a unique ID to recognize previously checked emails.
-                // In case the imap server doesn't give us an id, we take the date.
-                var id = email.Msg.MessageId ?? email.Msg.Date.ToLocalTime().ToString(); 
-
-                if (_alreadyCheckedEmails.TryGetValue(id, out object element))
-                    return true;
-                _alreadyCheckedEmails.Set(id, "", _cacheEntryOptions);
-            }
-            return false;
         }
         #endregion
     }

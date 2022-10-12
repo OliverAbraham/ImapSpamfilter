@@ -1,11 +1,4 @@
 ﻿{
-    ImapServer                      : "imap.1blu.de",
-    ImapPort                        : 993,
-    Username                        : "YOUR ACCOUNT USERNAME OR EMAIL ADDRESS",
-    Password                        : "YOUR ACCOUNT PASSWORD",
-    InboxFolderName                 : "inbox",
-    SpamFolderName                  : "junk",
     CheckIntervalMinutes            : 1,
-    ReCheckEveryUnreadMessage       : false,
     SpamfilterRules                 : "spamfilter-configuration.hjson"
 }

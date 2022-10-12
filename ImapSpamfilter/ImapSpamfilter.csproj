@@ -13,7 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Abraham.Mail" Version="1.0.0" />
     <PackageReference Include="Abraham.ProgramSettingsManager" Version="1.0.2" />
     <PackageReference Include="Abraham.Scheduler" Version="1.0.0" />
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
@@ -24,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Abraham.Spamfilter\Abraham.Spamfilter.csproj" />
+    <ProjectReference Include="..\Abraham.MailRuleEngine\Abraham.MailRuleEngine.csproj" />
   </ItemGroup>
 
   <ItemGroup>
