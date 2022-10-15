@@ -5,7 +5,13 @@ VisualStudioVersion = 17.4.32916.344
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImapSpamfilter", "ImapSpamfilter\ImapSpamfilter.csproj", "{E6F4AA69-F930-4036-963B-A3D00299C0A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Abraham.MailRuleEngine", "Abraham.MailRuleEngine\Abraham.MailRuleEngine.csproj", "{10B9A2D2-1B80-4BCA-8510-8E5752521F08}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abraham.MailRuleEngine", "Abraham.MailRuleEngine\Abraham.MailRuleEngine.csproj", "{10B9A2D2-1B80-4BCA-8510-8E5752521F08}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Projektmappenelemente", "{997BBCEA-5988-4F04-A8A5-F5194A86C342}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
