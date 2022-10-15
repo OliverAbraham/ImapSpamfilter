@@ -1,8 +1,7 @@
-﻿namespace Abraham.MailRuleEngine
+﻿namespace Abraham.MailRuleEngine;
+
+public class AnalysisResult
 {
-	public class AnalysisResult
-    {
-        public int Count { get; set; }
-        public string Details { get; set; }
-    }
+    public int Count { get; set; }
+    public string Details { get; set; }
 }

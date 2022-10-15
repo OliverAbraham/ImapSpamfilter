@@ -2,11 +2,21 @@
 
 public class Configuration
 {
+    public List<string>       SpamBlacklists                              { get; set; }
+    public int                SpamQueryTimeoutInSeconds                   { get; set; }
     public List<MailAccount>  MailAccounts                                { get; set; }
+
+    public void LogOptions(Action<string> logger)
+    {
+        logger($"Spam blacklist URLs               : {string.Join(',', SpamBlacklists)}");
+        logger($"Accounts                          : {string.Join(',', MailAccounts.Select(x => x.Name))}");
+        logger("");
+    }
 }                             
                               
 public class MailAccount
 {
+    public string             Name                                        { get; set; }
     public string             ImapServer                                  { get; set; }
     public int                ImapPort                                    { get; set; }
     public string             Username                                    { get; set; }

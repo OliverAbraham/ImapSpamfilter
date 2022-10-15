@@ -1,19 +1,22 @@
 ﻿{
+    SpamBlacklists                      : [ "http://zen.spamhaus.net" ],
+    SpamQueryTimeoutInSeconds           : 10,
     MailAccounts: [
     {
-        ImapServer                 : "",
-        ImapPort                   : "",
-        Username                   : "",
-        Password                   : "",
-        InboxFolderName            : "",
-        SpamFolderName             : "",
-        ReCheckEveryUnreadMessage  : "",
+        Name                       : "My first rule",
+        ImapServer                 : "imap.INSERT_YOUR_IMAP_SERVERNAME_HERE",
+        ImapPort                   : "993",
+        Username                   : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
+        Password                   : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
+        InboxFolderName            : "inbox,
+        SpamFolderName             : "Spam",
+        ReCheckEveryUnreadMessage  : false,
         Rules: [
         {                             
-            Name              : "Spamcheck",
-            IfMailIsSpam      : true,
-            Actions           : [ { Type: "MoveToFolder" } ]
-            SpamfilterSettings: [
+            Name                   : "Spamcheck",
+            IfMailIsSpam           : true,
+            Actions                : [ { Type: "MoveToFolder" } ]
+            SpamfilterSettings:
             {
                 SpecialCharacterWhitelist            : "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
                 CharacterWhitelist                   : "abcdefghijklmnopqrstuvwxyzäöüßABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß01234567890<>|,;.:-_#'+*~´`ß?\\!\"§$%&/()=",
@@ -24,6 +27,9 @@
                 SenderWhitelist: 
 	            [
                     "mail@example.com",
+                    "mail@my-father.com",
+                    "mail@my-brother.com",
+                    "@my-family.com",
                 ],
 
                 SenderBlacklist: 
@@ -34,7 +40,6 @@
                     "krypto",
                     "coinbase",
 		            "wallet",
-                    "exklusives",
                     "lotto",
                     "hotel",
 		            "norton",
@@ -47,6 +52,17 @@
 		            "trello",
 		            "jellybean",
 		            "blessing",
+					"enlarge",
+					"BTC wallet",
+					"video deluxe",
+					"wholesale",
+					"black friday",
+					"amazon rewards",
+					"last chance",
+					"coinbase",
+					"recommended for",
+					"good news regarding order",
+					"complete your order",
 	            ],
 
                 SubjectBlacklist:
@@ -58,8 +74,6 @@
                     "penis",
                 ],
             }
-        }
-        ]
-    }
-    ]
+        }]
+    }]
 }                             

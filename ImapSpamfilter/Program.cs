@@ -3,7 +3,6 @@ using Abraham.Scheduler;
 using NLog.Web;
 using CommandLine;
 using Abraham.MailRuleEngine;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace ImapSpamfilter
 {
@@ -30,7 +29,8 @@ namespace ImapSpamfilter
     ///     - a subject black list
     /// 
     /// The rules are processed in the following order.
-    /// An email is spam when:
+    /// An email is spam:
+    ///     - if the sender is blacklisted by spamhaus
     ///     - if the sender contains one of the sender blacklist words (you can whitelist all senders of a domain, e.g. "@mydomain.com")
     ///     - if more than half of the subject characters are non-latin (hard coded)
     ///     - if the sender email address contains more than a given number of special characters (configurable)
@@ -195,10 +195,9 @@ namespace ImapSpamfilter
             _logger.Debug($"");
             _logger.Debug($"");
             _logger.Debug($"");
-            _logger.Debug($"------------ 0 Configuration -------------------------------------------");
-            _logger.Debug($"Loaded from file               : {_programSettingsManager.ConfigFilename}");
+            _logger.Debug($"------------ Configuration -------------------------------------------");
+            _logger.Debug($"Loaded from file                  : {_programSettingsManager.ConfigFilename}");
             _programSettingsManager.Data.LogOptions(_logger);
-            _logger.Debug("");
         }
         #endregion
 
@@ -207,7 +206,8 @@ namespace ImapSpamfilter
         #region ------------- Periodic actions ----------------------------------------------------
         private static void StartScheduler()
         {
-            _spamfilter = new Spamfilter().UseLogger(_logger);
+            _spamfilter = new Spamfilter()
+                .UseLogger(_logger.Error, _logger.Warn, _logger.Info, _logger.Debug);
 
             // set the interval to 2 seconds
             _scheduler = new Scheduler()
@@ -250,7 +250,6 @@ namespace ImapSpamfilter
 
         private static void LoadConfigFileAndProcessRules()
         {
-            _logger.Debug($"Processing rules...");
             LoadOrReloadRules();
             _spamfilter.CheckAllRules();
         }
@@ -265,16 +264,19 @@ namespace ImapSpamfilter
 
             if (_thisIsTheFirstTime || configFileHasChanged)
             {
-                _thisIsTheFirstTime = false;
-                if (_thisIsTheFirstTime)
-                    _logger.Debug("Loading the spamfilter rules from file '_config.SpamfilterRules'");
-                else
+                if (!_thisIsTheFirstTime)
                     _logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
 
                 _spamfilter.LoadConfigurationFromFile(_config.SpamfilterRules);
                 _spamfilterConfigFileLastWriteTime = currentWriteTime;
 
+                _spamfilter.InitSpamhausResolver();
                 _spamfilter.ForgetAlreadyProcessedEmails();
+
+                if (_thisIsTheFirstTime)
+                    _spamfilter.Configuration.LogOptions(_logger.Debug);
+
+                _thisIsTheFirstTime = false;
             }
         }
         #endregion
