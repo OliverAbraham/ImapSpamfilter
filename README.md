@@ -77,6 +77,11 @@ An installer is not provided
 This project is licensed under Apache license.
 
 
+## CREDITS
+Thanks to Marlin Brüggemann for the Spamhaus query code!
+He published the code under https://github.com/mabru47/Spamhaus.Net
+
+
 ## SOURCE CODE
 https://www.github.com/OliverAbraham/Spamfilter
 
