@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abraham.MailRuleEngine", "A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Projektmappenelemente", "{997BBCEA-5988-4F04-A8A5-F5194A86C342}"
 	ProjectSection(SolutionItems) = preProject
+		..\NuGet\Abraham.Mail\Abraham.Mail\Ciridata.ico = ..\NuGet\Abraham.Mail\Abraham.Mail\Ciridata.ico
+		..\NuGet\Abraham.Mail\Abraham.Mail\Ciridata.png = ..\NuGet\Abraham.Mail\Abraham.Mail\Ciridata.png
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection
