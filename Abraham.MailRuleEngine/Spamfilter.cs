@@ -319,6 +319,16 @@ public class Spamfilter
         if (senderEMail is null)
             senderEMail = "";
 
+        var senderNameWithoutPunctuation = RemoveAllPunctuationCharactersFrom(senderName);
+        var subjectWithoutPunctuation    = RemoveAllPunctuationCharactersFrom(subject);
+
+        var senderEmailAllLower = senderEMail.ToLower();
+        foreach(var sender in settings.SenderWhitelist)
+        {
+            if (senderEmailAllLower.Contains(sender.ToLower()))
+                return new Classification(false, $"Sender on whitelist: {senderEMail}");
+        }
+
         if (senderIpAddresses.Any())
         {
             foreach(var ip in senderIpAddresses) 
@@ -327,21 +337,6 @@ public class Spamfilter
                 if (blacklisted)
                     return new Classification(true, $"Sender is blacklisted: {ip} on list {list}");
             }
-        }
-
-        var senderNameWithoutPunctuation = RemoveAllPunctuationCharactersFrom(senderName);
-        var subjectWithoutPunctuation    = RemoveAllPunctuationCharactersFrom(subject);
-
-        if (settings.SenderWhitelist.Contains(senderEMail.ToLower()))
-        {
-            return new Classification(false, $"Sender on whitelist (exactly): {senderEMail}");
-        }
-
-        var senderEmailAllLower = senderEMail.ToLower();
-        foreach(var sender in settings.SenderWhitelist)
-        {
-            if (senderEmailAllLower.Contains(sender.ToLower()))
-                return new Classification(false, $"Sender on whitelist (partially): {senderEMail}");
         }
 
         // If more than half of the characters are non-latin, this is spam
