@@ -16,64 +16,66 @@
             Name                   : "Spamcheck",
             IfMailIsSpam           : true,
             Actions                : [ { Type: "MoveToFolder" } ]
-            SpamfilterSettings:
-            {
-                SpecialCharacterWhitelist            : "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
-                CharacterWhitelist                   : "abcdefghijklmnopqrstuvwxyzäöüßABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß01234567890<>|,;.:-_#'+*~´`ß?\\!\"§$%&/()=",
-                SpecialCharactersSenderEmailThreshold: 5,
-                SpecialCharactersSenderNameThreshold : 5,
-                SpecialCharactersSubjectThreshold    : 5,
-
-                SenderWhitelist: 
-	            [
-                    "mail@example.com",
-                    "mail@my-father.com",
-                    "mail@my-brother.com",
-                    "@my-family.com",
-                ],
-
-                SenderBlacklist: 
-                [ 
-                    "aliexpress",
-                    "bitcoin",
-                    "crypto",
-                    "krypto",
-                    "coinbase",
-		            "wallet",
-                    "lotto",
-                    "hotel",
-		            "norton",
-		            "investment",
-		            "key account",
-		            "instagram",
-		            "linkedin",
-		            "mozilla",
-		            "xing",
-		            "trello",
-		            "jellybean",
-		            "blessing",
-					"enlarge",
-					"BTC wallet",
-					"video deluxe",
-					"wholesale",
-					"black friday",
-					"amazon rewards",
-					"last chance",
-					"coinbase",
-					"recommended for",
-					"good news regarding order",
-					"complete your order",
-	            ],
-
-                SubjectBlacklist:
-                [ 
-                    "bitcoin",
-                    "crypto",
-                    "krypto",
-                    "invest",
-                    "penis",
-                ],
-            }
+            SpamfilterSettings     : {}
         }]
-    }]
+    }],
+
+	GeneralSpamfilterSettings:
+	{
+        SpecialCharacterWhitelist            : "01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzäöüÄÖÜß?!§$%&/()'#*@_ ",
+        CharacterWhitelist                   : "abcdefghijklmnopqrstuvwxyzäöüßABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß01234567890<>|,;.:-_#'+*~´`ß?\\!\"§$%&/()=",
+        SpecialCharactersSenderEmailThreshold: 5,
+        SpecialCharactersSenderNameThreshold : 5,
+        SpecialCharactersSubjectThreshold    : 5,
+
+        SenderWhitelist: 
+	    [
+            "mail@example.com",
+            "mail@my-father.com",
+            "mail@my-brother.com",
+            "@my-family.com",
+        ],
+
+        SenderBlacklist: 
+        [ 
+            "aliexpress",
+            "bitcoin",
+            "crypto",
+            "krypto",
+            "coinbase",
+		    "wallet",
+            "lotto",
+            "hotel",
+		    "norton",
+		    "investment",
+		    "key account",
+		    "instagram",
+		    "linkedin",
+		    "mozilla",
+		    "xing",
+		    "trello",
+		    "jellybean",
+		    "blessing",
+			"enlarge",
+			"BTC wallet",
+			"video deluxe",
+			"wholesale",
+			"black friday",
+			"amazon rewards",
+			"last chance",
+			"coinbase",
+			"recommended for",
+			"good news regarding order",
+			"complete your order",
+	    ],
+
+        SubjectBlacklist:
+        [ 
+            "bitcoin",
+            "crypto",
+            "krypto",
+            "invest",
+            "penis",
+        ],
+	}
 }                             

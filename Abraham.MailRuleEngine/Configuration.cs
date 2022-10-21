@@ -5,6 +5,7 @@ public class Configuration
     public List<string>       SpamBlacklists                              { get; set; }
     public int                SpamQueryTimeoutInSeconds                   { get; set; }
     public List<MailAccount>  MailAccounts                                { get; set; }
+    public SpamfilterSettings GeneralSpamfilterSettings                   { get; set; }
 
     public void LogOptions(Action<string> logger)
     {

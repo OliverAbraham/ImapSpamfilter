@@ -137,25 +137,33 @@ public class Spamfilter
     private void CheckAllRules_internal()
     {
         foreach(var mailAccount in Configuration.MailAccounts)
-            Check(mailAccount);
+            Check(mailAccount, Configuration.GeneralSpamfilterSettings);
     }
 
-    private void Check(MailAccount account)
+    private void Check(MailAccount account, SpamfilterSettings generalSpamfilterSettings)
     {
         _debugLogger($"Checking account '{account.Name}'");
         foreach(var rule in account.Rules)
-            Check(rule, account);
+            Check(rule, account, generalSpamfilterSettings);
     }
 
-    private void Check(Rule rule, MailAccount account)
+    private void Check(Rule rule, MailAccount account, SpamfilterSettings generalSpamfilterSettings)
     {
         _debugLogger($"Checking rule    '{rule.Name}'");
         if (rule.IfMailIsSpam)
-            CheckForSpam(rule, account);
+            CheckForSpam(rule, account, generalSpamfilterSettings);
     }
 
-    private void CheckForSpam(Rule rule, MailAccount account)
+    private void CheckForSpam(Rule rule, MailAccount account, SpamfilterSettings generalSpamfilterSettings)
     {
+        var specificSettingsAreSetForThisAccount = 
+            rule.SpamfilterSettings is not null && 
+            !string.IsNullOrWhiteSpace(rule.SpamfilterSettings.SpecialCharacterWhitelist);
+
+        var spamfilterSettings = specificSettingsAreSetForThisAccount
+            ? rule.SpamfilterSettings 
+            : generalSpamfilterSettings;
+
         ImapClient? client = null;
 
         try
@@ -172,7 +180,7 @@ public class Spamfilter
 
             foreach (var email in emails)
             {
-                CheckOneEmailAndMoveItToSpamfolder(client, rule, email);
+                CheckOneEmailAndMoveItToSpamfolder(client, rule, email, spamfilterSettings);
             }
         }
         finally
@@ -181,9 +189,9 @@ public class Spamfilter
         }
     }
 
-    private void CheckOneEmailAndMoveItToSpamfolder(ImapClient client, Rule rule, Message email)
+    private void CheckOneEmailAndMoveItToSpamfolder(ImapClient client, Rule rule, Message email, SpamfilterSettings spamfilterSettings)
     {
-        if (WeAlreadyCheckedThis(email, rule.SpamfilterSettings))
+        if (WeAlreadyCheckedThis(email, spamfilterSettings))
             return;
 
         var ipAddresses   = ExtractReceivedFromIPAddresses(email);
@@ -195,7 +203,7 @@ public class Spamfilter
                             ?? email.Msg.GetTextBody(TextFormat.Plain)
                             ?? "";
 
-        var classification = ClassifyEmail(ipAddresses, subject, body, senderName, senderAddress, rule.SpamfilterSettings);
+        var classification = ClassifyEmail(ipAddresses, subject, body, senderName, senderAddress, spamfilterSettings);
         if (classification.EmailIsSpam)
         {
             client.MoveEmailToFolder(email, _inboxFolder, _spamFolder);
