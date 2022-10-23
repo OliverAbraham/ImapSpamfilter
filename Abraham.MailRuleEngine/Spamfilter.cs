@@ -183,6 +183,10 @@ public class Spamfilter
                 CheckOneEmailAndMoveItToSpamfolder(client, rule, email, spamfilterSettings);
             }
         }
+        catch (Exception ex)
+        {
+            _errorLogger($"Spamcheck could NOT be done for postbox {account.Name}");
+        }
         finally
         {
             ClosePostbox(client);
@@ -285,24 +289,62 @@ public class Spamfilter
     #region ------------- IMAP postbox --------------------------------------------------------
     private ImapClient OpenPostbox(MailAccount account)
     {
-        var client = new ImapClient()
-            .UseHostname(account.ImapServer)
-            .UsePort(account.ImapPort)
-            .UseSecurityProtocol(Security.Ssl)
-            .UseAuthentication(account.Username, account.Password)
-            .Open();
+        ImapClient client = null;
+        try
+        {
+            client = new ImapClient()
+                .UseHostname(account.ImapServer)
+                .UsePort(account.ImapPort)
+                .UseSecurityProtocol(Security.Ssl)
+                .UseAuthentication(account.Username, account.Password)
+                .Open();
+        }
+        catch (Exception ex) 
+        {
+            _errorLogger($"Error opening the connection to postbox {account.ImapServer}. More Info: {ex}");
+        }
 
-        var folders = client.GetAllFolders().ToList();
+        List<IMailFolder> folders = null;
+        try
+        {
+            folders = client?.GetAllFolders()?.ToList();
+        }
+        catch (Exception ex) 
+        {
+            _errorLogger($"Error opening the connection to postbox {account.ImapServer}. More Info: {ex}");
+            throw;
+        }
 
-        _inboxFolder = client.GetFolderByName(folders, account.InboxFolderName);
-        if (_inboxFolder is null)
-            throw new Exception($"Error getting the folder named '{account.InboxFolderName}' from your imap server");
+        try
+        {
+            _inboxFolder = client?.GetFolderByName(folders, account.InboxFolderName);
+            if (_inboxFolder is null)
+                throw new Exception(FormatErrorMessage(account.InboxFolderName, folders));
+        }
+        catch (Exception ex) 
+        {
+            _errorLogger(FormatErrorMessage(account.InboxFolderName, folders));
+            throw;
+        }
 
-        _spamFolder = client.GetFolderByName(folders, account.SpamFolderName);
-        if (_spamFolder is null)
-            throw new Exception($"Error getting the folder named '{account.SpamFolderName}' from your imap server");
+        try
+        {
+            _spamFolder = client.GetFolderByName(folders, account.SpamFolderName);
+            if (_spamFolder is null)
+                throw new Exception(FormatErrorMessage(account.SpamFolderName, folders));
+        }
+        catch (Exception ex) 
+        {
+            _errorLogger(FormatErrorMessage(account.SpamFolderName, folders));
+            throw;
+        }
 
         return client;
+    }
+
+    private static string FormatErrorMessage(string name, List<IMailFolder> folders)
+    {
+        return $"Error getting the folder named '{name}' from your imap server. Existing folders are: {string.Join(',', folders.Select(x => x.Name))}";
     }
 
     private void ClosePostbox(ImapClient? client)

@@ -67,10 +67,12 @@ Written by Oliver Abraham, mail@oliver-abraham.de
 
 ## INSTALLATION AND CONFIGURATION
 An installer is not provided
-- Build the application
+- Build the application or download the latest release
 - Edit appsettings.hjson (basic settings)
 - Edit spamfilter-configuration.hjson (filter rules)
 - Edit nlog.config (optional) You can set the log rotation here, for example). For more information refer to https://nlog-project.org/
+
+I want to use general filter rules for spamcheck, because they're applied to every mailbox you want to check.
 
 
 ## LICENSE
