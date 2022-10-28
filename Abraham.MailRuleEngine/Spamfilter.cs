@@ -207,7 +207,10 @@ public class Spamfilter
             var oneActionWasDone = CheckRule(rule, email, dto);
             
             if (rule.StopAfterAction && oneActionWasDone)
+            {
+                _debugLogger($"    Stopping rule execution");
                 break;
+            }
         }
     }
 
@@ -223,6 +226,9 @@ public class Spamfilter
 
     private string FormatResult(string actionCode, Rule rule, Message email, string action, string reasons)
     {
+        if (reasons.Contains("mail is SPAM"))
+            actionCode = "SPAM";
+
         return $"    - {FormatActionCode(actionCode)}: {FormatEmail(email)}   {FormatRule(rule)}   {FormatComment(action, reasons)}";
     }
 
