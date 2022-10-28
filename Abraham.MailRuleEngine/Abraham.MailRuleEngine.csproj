@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Abraham.Mail" Version="1.0.0" />
+    <PackageReference Include="Abraham.Mail" Version="1.0.1" />
     <PackageReference Include="Abraham.ProgramSettingsManager" Version="1.0.2" />
     <PackageReference Include="DnsClient" Version="1.6.1" />
     <PackageReference Include="MailKit" Version="3.4.1" />

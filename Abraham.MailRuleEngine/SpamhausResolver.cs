@@ -123,7 +123,7 @@ public class SpamhausResolver
         }
     }
 
-    public async Task AddUrlAsync(String url)
+    public async Task AddUrlAsync(string url)
     {
         try
         {
@@ -142,7 +142,7 @@ public class SpamhausResolver
         }
     }
 
-    public async Task AddFileAsync(String path)
+    public async Task AddFileAsync(string path)
     {
         try
         {
@@ -164,7 +164,7 @@ public class SpamhausResolver
         {
             using (var sr = new StreamReader(baseStream))
             {
-                String line;
+                string? line;
                 while ((line = await sr.ReadLineAsync()) != null)
                 {
                     if (line.Length == 0 || line[0] == ';')
@@ -190,12 +190,12 @@ public class SpamhausResolver
         }
     }
 
-    public void AddNetwork(IPAddress network, Int32 mask, String identifier = null)
+    public void AddNetwork(IPAddress network, Int32 mask, string identifier = "")
     {
         _blockTree.AddNetwork(network, mask, identifier);
     }
 
-    public void AddIPAddress(IPAddress client, String identifier = null)
+    public void AddIPAddress(IPAddress client, string identifier = "")
     {
         _blockTree.AddNetwork(client, client.GetAddressBytes().Length * 8, identifier);
     }
@@ -206,13 +206,13 @@ public class SpamhausResolver
     /// <param name="client"></param>
     /// <param name="timeout"></param>
     /// <returns></returns>
-    public async Task<String> IsBlockedAsync(IPAddress client)
+    public async Task<string?> IsBlockedAsync(IPAddress client)
     {
         try
         {
             if (UseCache)
             {
-                String identifier;
+                string identifier;
                 if ((identifier = _blockTree.IsBlocked(client)) != null)
                 {
                     if (identifier != SpamhausResult.NL.ToString())
@@ -233,11 +233,11 @@ public class SpamhausResolver
                 Timeout = QueryTimeout,
             };
 
-            String reverseIPAddress;
+            string reverseIPAddress;
             var ipBytes = new List<Byte>(client.GetAddressBytes()).Reverse<Byte>();
             if (client.AddressFamily == AddressFamily.InterNetwork)
             {
-                reverseIPAddress = String.Join(".", ipBytes);
+                reverseIPAddress = string.Join(".", ipBytes);
             }
             else if (client.AddressFamily == AddressFamily.InterNetworkV6)
             {

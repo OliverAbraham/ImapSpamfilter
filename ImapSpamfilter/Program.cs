@@ -57,13 +57,13 @@ namespace ImapSpamfilter
     public class Program
     {
         #region ------------- Fields --------------------------------------------------------------
-	    private static CommandLineOptions _commandLineOptions;
-        private static ProgramSettingsManager<Configuration> _programSettingsManager;
-        private static Configuration _config;
-        private static NLog.Logger _logger;
-        private static Scheduler _scheduler;
+	    private static CommandLineOptions _commandLineOptions = new CommandLineOptions();
+        private static ProgramSettingsManager<Configuration> _programSettingsManager = new ProgramSettingsManager<Configuration>();
+        private static Configuration _config = new();
+        private static NLog.Logger _logger = NLogBuilder.ConfigureNLog("").GetCurrentClassLogger();
+        private static Scheduler? _scheduler;
         private static DateTime _spamfilterConfigFileLastWriteTime = default(DateTime);
-        private static Spamfilter _spamfilter;
+        private static Spamfilter? _spamfilter;
         private static bool _thisIsTheFirstTime = true;
         #endregion
 
@@ -81,7 +81,16 @@ namespace ImapSpamfilter
 	            You can use Variables for special folders, like %APPDATA%.
 	            Please refer to the documentation of my nuget package https://github.com/OliverAbraham/Abraham.ProgramSettingsManager
 	            """)]
-	        public string ConfigurationFile { get; set; }
+	        public string ConfigurationFile { get; set; } = "";
+
+	        [Option('n', "nlogconfig", Default = "nlog.config", Required = false, HelpText = 
+	            """
+	            NLOG Configuration file (full path and filename).
+	            If you don't specify this option, the program will expect your configuration file 
+	            named 'nlog.config' in your program folder.
+	            You can specify a different location.
+	            """)]
+            public string NlogConfigurationFile { get; set; } = "";
 	
 	        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
 	        public bool Verbose { get; set; }
@@ -126,6 +135,9 @@ namespace ImapSpamfilter
 	        CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args)
 	            .WithParsed   <CommandLineOptions>(options => { _commandLineOptions = options; })
 	            .WithNotParsed<CommandLineOptions>(errors  => { Console.WriteLine(errors.ToString()); });
+            
+            if (_commandLineOptions is null)
+                throw new Exception();
 	    }
 	
 	    private static void ReadConfiguration()
@@ -159,11 +171,13 @@ namespace ImapSpamfilter
         {
             try
             {
-                _logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+                _logger = NLogBuilder.ConfigureNLog(_commandLineOptions.NlogConfigurationFile).GetCurrentClassLogger();
+                if (_logger is null)
+                    throw new Exception();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error initializing our logger. {ex.ToString()}");
+                Console.WriteLine($"Error initializing our logger with the configuration file {_commandLineOptions.NlogConfigurationFile}. More info: {ex}");
                 throw;  // ATTENTION: When you come here, you probably forgot to set the properties of nlog.config to "copy if newer"!
             }
         }
@@ -219,7 +233,7 @@ namespace ImapSpamfilter
 
         private static void StopScheduler()
         {
-            _scheduler.Stop();
+            _scheduler?.Stop();
         }
 
         private static void PeriodicJob()
@@ -251,7 +265,7 @@ namespace ImapSpamfilter
         private static void LoadConfigFileAndProcessRules()
         {
             LoadOrReloadRules();
-            _spamfilter.CheckAllRules();
+            _spamfilter?.CheckAllRules();
         }
 
         private static void LoadOrReloadRules()
@@ -267,14 +281,14 @@ namespace ImapSpamfilter
                 if (!_thisIsTheFirstTime)
                     _logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
 
-                _spamfilter.LoadConfigurationFromFile(_config.SpamfilterRules);
+                _spamfilter?.LoadConfigurationFromFile(_config.SpamfilterRules);
                 _spamfilterConfigFileLastWriteTime = currentWriteTime;
 
-                _spamfilter.InitSpamhausResolver();
-                _spamfilter.ForgetAlreadyProcessedEmails();
+                _spamfilter?.InitSpamhausResolver();
+                _spamfilter?.ForgetAlreadyProcessedEmails();
 
                 if (_thisIsTheFirstTime)
-                    _spamfilter.Configuration.LogOptions(_logger.Debug);
+                    _spamfilter?.Configuration.LogOptions(_logger.Debug);
 
                 _thisIsTheFirstTime = false;
             }
