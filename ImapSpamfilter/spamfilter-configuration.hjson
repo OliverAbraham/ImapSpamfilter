@@ -2,23 +2,38 @@
     SpamBlacklists                      : [ "http://zen.spamhaus.net" ],
     SpamQueryTimeoutInSeconds           : 10,
     MailAccounts: [
-    {
-        Name                       : "My first rule",
-        ImapServer                 : "imap.INSERT_YOUR_IMAP_SERVERNAME_HERE",
-        ImapPort                   : "993",
-        Username                   : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
-        Password                   : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
-        InboxFolderName            : "inbox,
-        SpamFolderName             : "Spam",
-        ReCheckEveryUnreadMessage  : false,
-        Rules: [
-        {                             
-            Name                   : "Spamcheck",
-            IfMailIsSpam           : true,
-            Actions                : [ { Type: "MoveToFolder" } ]
-            SpamfilterSettings     : {}
-        }]
-    }],
+	{
+		Name                            : "My email account",
+        ImapServer					    : "imap.INSERT_YOUR_IMAP_SERVERNAME_HERE",
+        ImapPort					    : "993",
+        Username					    : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
+        Password					    : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
+		SmtpServer                      : "smtp.INSERT_YOUR_IMAP_SERVERNAME_HERE",
+		SmtpPort                        : 465,
+		SmtpUsername                    : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
+		SmtpPassword                    : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
+		InboxFolderName                 : "inbox",
+		Rules: [
+		{                             
+			Name              			: "Spamcheck",
+			IfMailIsSpam      			: true,
+			Actions           			: [ { Type: "MoveToFolder", Folder: "junk" } ],
+			StopAfterAction             : true,
+			SpamfilterSettings			: {}
+		},
+		{
+			Name              			: "Forward emails",
+			Actions           			: [ { Type: "Forward", Receiver: "mail@oliver-abraham.de" } ],
+			StopAfterAction             : false,
+		},
+		{
+			Name              			: "move to forwarded folder",
+			Actions           			: [ { Type: "MoveToFolder", Folder: "ForwardedEmails" } ],
+			StopAfterAction             : false,
+		}
+		]
+	}
+    ],
 
 	GeneralSpamfilterSettings:
 	{

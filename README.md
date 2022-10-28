@@ -56,23 +56,124 @@ When the last write time of this file changes, it will reload the file and re-pr
 So this is convenient: When you adjust the spam rules, you only have to wait.
 
 
-## A NOTE ON THE CONFIGURATION FILE 2
-The file format is open to support rules in general, like outlook rules. 
-Please note my spam filter is not perfect, just an MVP.
-
-
 ## AUTHOR
 Written by Oliver Abraham, mail@oliver-abraham.de
 
 
-## INSTALLATION AND CONFIGURATION
+## INSTALLATION
 An installer is not provided
 - Build the application or download the latest release
-- Edit appsettings.hjson (basic settings)
-- Edit spamfilter-configuration.hjson (filter rules)
-- Edit nlog.config (optional) You can set the log rotation here, for example). For more information refer to https://nlog-project.org/
 
-I want to use general filter rules for spamcheck, because they're applied to every mailbox you want to check.
+
+## INSTALLATION AND CONFIGURATION
+#### Edit the file "appsettings.hjson"
+
+Just check the path to the file "spamfilter-configuration.hjson". 
+Normally just name the file, without any path-
+
+
+#### Edit the filter rules 
+
+Edit file "spamfilter-configuration.hjson".
+First, enter the credentials for your mailbox like this.
+If you don't want to forward emails, you can leave out the Smtp lines:
+
+    MailAccounts: [
+	{
+        Name                            : "My email account",
+        ImapServer			    : "imap.yourprovider.com",
+        ImapPort			    : "993",
+        Username			    : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
+        Password			    : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
+        SmtpServer                      : "smtp.yourprovider.com",
+        SmtpPort                        : 465,
+        SmtpUsername                    : "ENTER_YOUR_ACCOUNT_HERE____TYPICALLY_YOUR_EMAIL_ADDRESS",
+        SmtpPassword                    : "ENTER_YOUR_MAILBOX_PASSWORD_HERE",
+        InboxFolderName                 : "inbox",
+        Rules: [
+        { ... enter your rules here ...}
+        ]
+	}
+    ],
+
+
+This is an example for a rule that checks every incoming email for spam. Spam is moved to the junk folder:
+
+	Rules: [
+    {                             
+    	Name              	: "Spamcheck",
+    	IfMailIsSpam      	: true,
+    	Actions           	: [ { Type: "MoveToFolder", Folder: "junk" } ],
+    	StopAfterAction         : true,
+    	SpamfilterSettings      : {}
+	},
+
+
+
+The following example is an additional rule that checks for special words in the email. 
+This makes only sense to process emails from a web form that don't use captchas.
+I assume your web form has a choice field with several choices "I am no human", and one choice "i am a human".
+A robot won't fill out the correct choice, so you can recognize spam with "no human".
+
+	Rules: [
+    { . . . },
+    {                             
+    	Name              			: "Spamcheck for contact form",
+    	IfMailIsSpam      			: false,
+    	IfMailWasSentBy    			: ["sender@mywebsite.com"],
+    	IfMailWasSentTo    			: ["mail@myemailaddress.com"],
+    	IfMailContainsWordsInSubject            : ["Kontact form"],
+    	IfMailContainsWordsInBody               : ["no human"" ],
+    	Actions           			: [ { Type: "MoveToFolder", Folder: "junk" } ],
+    	StopAfterAction                         : true,
+    	SpamfilterSettings			: {}
+    },
+
+My last example has for rules:
+- It checks for spam using your rules and spamhaus
+- checks for the word "no human" in the body
+- If the mail is good, it worwards it to another mailbox
+- and moves it to the folder "ForwaredEmails"
+
+Like this:
+
+	Rules: [
+    {                             
+    	Name              			: "Spamcheck",
+    	IfMailIsSpam      			: true,
+    	Actions           			: [ { Type: "MoveToFolder", Folder: "junk" } ],
+    	StopAfterAction                         : true,
+    	SpamfilterSettings			: {}
+    },
+    {                             
+    	Name              			: "Spamcheck for contact form",
+    	IfMailIsSpam      			: false,
+    	IfMailWasSentBy    			: ["sender@mywebsite.com"],
+    	IfMailWasSentTo    			: ["mail@myemailaddress.com"],
+    	IfMailContainsWordsInSubject            : ["Kontaktformular"],
+    	IfMailContainsWordsInBody               : ["no human" ],
+    	Actions           			: [ { Type: "MoveToFolder", Folder: "junk" } ],
+    	StopAfterAction                         : true,
+    	SpamfilterSettings			: {}
+    },
+    {
+    	Name              			: "Forward ciridata emails",
+    	Actions           			: [ { Type: "Forward", Receiver: "mail@another.com" } ],
+    	StopAfterAction                         : false,
+    },
+    {
+    	Name              			: "move to forwarded folder",
+    	Actions           			: [ { Type: "MoveToFolder", Folder: "ForwardedEmails" } ],
+    	StopAfterAction                         : false,
+    }
+
+
+#### Edit "nlog.config" (optional)
+
+To change my default logging settings, edit this file.
+I've configured weekly log rotation and two files, one for debug messages and one for the spam related actions.
+If you're not familiar with nlog, leave the file as it is.
+For more information refer to https://nlog-project.org/
 
 
 ## LICENSE
