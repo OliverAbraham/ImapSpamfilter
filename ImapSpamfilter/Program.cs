@@ -57,14 +57,14 @@ namespace ImapSpamfilter
     public class Program
     {
         #region ------------- Fields --------------------------------------------------------------
-	    private static CommandLineOptions _commandLineOptions = new CommandLineOptions();
-        private static ProgramSettingsManager<Configuration> _programSettingsManager = new ProgramSettingsManager<Configuration>();
-        private static Configuration _config = new();
-        private static NLog.Logger _logger = NLogBuilder.ConfigureNLog("").GetCurrentClassLogger();
-        private static Scheduler? _scheduler;
-        private static DateTime _spamfilterConfigFileLastWriteTime = default(DateTime);
-        private static Spamfilter? _spamfilter;
-        private static bool _thisIsTheFirstTime = true;
+	    private static CommandLineOptions                    _commandLineOptions                = new CommandLineOptions();
+        private static ProgramSettingsManager<Configuration> _programSettingsManager            = new ProgramSettingsManager<Configuration>();
+        private static Configuration                         _config                            = new();
+        private static NLog.Logger                           _logger                            = NLogBuilder.ConfigureNLog("").GetCurrentClassLogger();
+        private static Scheduler?                            _scheduler;
+        private static DateTime                              _spamfilterConfigFileLastWriteTime = default(DateTime);
+        private static Spamfilter?                           _spamfilter;
+        private static bool                                  _thisIsTheFirstTime                = true;
         #endregion
 
 
@@ -223,7 +223,6 @@ namespace ImapSpamfilter
             _spamfilter = new Spamfilter()
                 .UseLogger(_logger.Error, _logger.Warn, _logger.Info, _logger.Debug);
 
-            // set the interval to 2 seconds
             _scheduler = new Scheduler()
                 .UseAction(() => PeriodicJob())
                 .UseFirstStartRightNow()

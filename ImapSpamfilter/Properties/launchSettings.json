@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ImapSpamfilter": {
+      "commandName": "Project",
+      "commandLineArgs": "--config C:\\Credentials\\appsettings.hjson"
+    }
+  }
+}

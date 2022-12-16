@@ -2,6 +2,7 @@
 using Abraham.ProgramSettingsManager;
 using MailKit;
 using Microsoft.Extensions.Caching.Memory;
+using MimeKit;
 using MimeKit.Text;
 using System.Data;
 using System.Net;
@@ -496,13 +497,30 @@ public class Spamfilter
 			    .Open();
 
             var subject       = email.Msg.Subject ?? "";
-            var body          = email.Msg.GetTextBody(TextFormat.Html)
-                             ?? email.Msg.GetTextBody(TextFormat.Text)
-                             ?? email.Msg.GetTextBody(TextFormat.Plain)
-                             ?? "";
+            var htmlBody      = email.Msg.GetTextBody(TextFormat.Html);
+            var textBody      = email.Msg.GetTextBody(TextFormat.Text);
+            var plainBody     = email.Msg.GetTextBody(TextFormat.Plain);
             var attachments   = email.Msg.Attachments.ToList();
 
-    		_client.SendEmail(dto.Account.Name, action.Receiver, "FW: " + subject, body, attachments);
+            var mimeMessage = new MimeMessage();
+            mimeMessage.From.Add(new MailboxAddress(dto.Account.Name, dto.Account.Name));
+            mimeMessage.To.Add(new MailboxAddress(action.Receiver, action.Receiver));
+            mimeMessage.Subject = "FW: " + subject;
+            
+            var builder = new BodyBuilder();
+            if (!string.IsNullOrWhiteSpace(htmlBody))
+                builder.HtmlBody = htmlBody;
+            if (!string.IsNullOrWhiteSpace(textBody))
+                builder.TextBody = textBody;
+            else if (!string.IsNullOrWhiteSpace(plainBody))
+                builder.TextBody = plainBody;
+
+            attachments?.ForEach(delegate (MimeEntity x)
+            {
+                builder.Attachments.Add(x);
+            });
+            mimeMessage.Body = builder.ToMessageBody();
+            _client.SendEmail(mimeMessage);
 
             _infoLogger(FormatResult("FORWARDED", rule, email, $"forwarded to '{action.Receiver}'", reason));
             return true;
