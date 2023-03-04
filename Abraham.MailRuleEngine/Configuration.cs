@@ -5,6 +5,7 @@ public class Configuration
     public List<string>?      SpamBlacklists                              { get; set; } = null;
     public int                SpamQueryTimeoutInSeconds                   { get; set; }
     public bool               ReCheckEveryUnreadMessage                   { get; set; } = false;
+    public string             AiEngineTrainingFileName                    { get; set; } = "";
     public List<MailAccount>? MailAccounts                                { get; set; } = null;
     public SpamfilterSettings? GeneralSpamfilterSettings                  { get; set; } = null;
 

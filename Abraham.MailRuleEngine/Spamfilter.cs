@@ -4,6 +4,7 @@ using MailKit;
 using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
 using MimeKit.Text;
+using Newtonsoft.Json;
 using System.Data;
 using System.Net;
 using System.Text;
@@ -348,12 +349,27 @@ public class Spamfilter
 
         var classification = ClassifyEmail(ipAddresses, subject, body, senderName, senderAddress, spamfilterSettings);
         
+        WriteAiTrainingFile(subject, body, senderName, senderAddress, classification.EmailIsSpam ? "SPAM" : "OK");
+
         if (classification.EmailIsSpam)
         {
             reasons += $"mail is SPAM ({classification.Reason})";
             return true;
         }
         return false;
+    }
+
+    private void WriteAiTrainingFile(string subject, string body, string senderName, string senderAddress, string classification)
+    {
+        var dto = new TrainingFileRow {
+            Subject        = subject,
+            Body           = body,
+            SenderName     = senderName,
+            SenderAddress  = senderAddress,
+            Classification = classification
+        };
+        var dtoAsJson = JsonConvert.SerializeObject(dto);
+        File.AppendAllText(Configuration.AiEngineTrainingFileName, dtoAsJson + ",\n");
     }
 
     private List<IPAddress> ExtractReceivedFromIPAddresses(Message email)
