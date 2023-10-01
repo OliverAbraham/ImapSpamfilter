@@ -81,6 +81,7 @@ public class SpamfilterSettings
     public int                SpecialCharactersSenderEmailThreshold       { get; set; }
     public int                SpecialCharactersSenderNameThreshold        { get; set; }
     public int                SpecialCharactersSubjectThreshold           { get; set; }
+    public int                NonLatinCharactersSubjectThreshold          { get; set; }
     public string[]           SenderWhitelist                             { get; set; } = new string[0];
     public string[]           SenderBlacklist                             { get; set; } = new string[0];
     public string[]           SubjectBlacklist                            { get; set; } = new string[0];

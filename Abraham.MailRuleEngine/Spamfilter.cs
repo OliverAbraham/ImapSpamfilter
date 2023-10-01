@@ -361,6 +361,8 @@ public class Spamfilter
 
     private void WriteAiTrainingFile(string subject, string body, string senderName, string senderAddress, string classification)
     {
+        if (string.IsNullOrWhiteSpace(Configuration.AiEngineTrainingFileName))
+            return;
         var dto = new TrainingFileRow {
             Subject        = subject,
             Body           = body,
@@ -669,9 +671,9 @@ public class Spamfilter
         // If more than half of the characters are non-latin, this is spam
         var countTotal              = subject.Length;
         var countNonLatinCharacters = CalculateNonWhiteListCharacterCount(subject, settings);
-        if (countNonLatinCharacters >= countTotal/2)
+        if (countNonLatinCharacters > settings.NonLatinCharactersSubjectThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in subject ({countNonLatinCharacters} of {countTotal})");
+            return new Classification(true, $"Too many unallowed non-latin characters in subject ({countNonLatinCharacters} of {countTotal})");
         }
 
         var specialCharactersSenderEmail = CalculateSpecialCharacterCount(senderEMail, settings);
@@ -785,8 +787,8 @@ public class Spamfilter
         int count = 0;
         foreach(var character in text)
         {
-            if (!settings.CharacterWhitelist.Contains(character))
-            count++;
+            if (!settings.CharacterWhitelist.Contains(character) && character != ' ')
+                count++;
         }
         return count;
     }
