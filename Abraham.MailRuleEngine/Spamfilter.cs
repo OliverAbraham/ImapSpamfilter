@@ -650,8 +650,18 @@ public class Spamfilter
 
         var senderNameWithoutPunctuation = RemoveAllPunctuationCharactersFrom(senderName);
         var subjectWithoutPunctuation    = RemoveAllPunctuationCharactersFrom(subject);
-
         var senderEmailAllLower = senderEMail.ToLower();
+
+        if (StringContainsNonLatinUnicodeCharacters(senderEMail))
+        {
+            return new Classification(true, $"Non-latin characters in sender email. They might look like latin! ({senderEMail})");
+        }
+
+        if (StringContainsNonLatinUnicodeCharacters(senderName))
+        {
+            return new Classification(true, $"Non-latin characters in sender name. They might look like latin! ({senderName})");
+        }
+
         foreach(var sender in settings.SenderWhitelist)
         {
             if (senderEmailAllLower.Contains(sender.ToLower()))
@@ -715,6 +725,14 @@ public class Spamfilter
             }
         }
 
+        foreach (var blacklistWord in settings.SenderBlacklist)
+        {
+            if (senderEmailAllLower.Contains(blacklistWord.ToLower()))
+            {
+                return new Classification(true, $"Sender contains a blacklisted word ('{blacklistWord}' in '{senderNameAllLower}')");
+            }
+        }
+
         if (subject != null)
             foreach (var blacklistWord in settings.SubjectBlacklist)
             {
@@ -725,6 +743,14 @@ public class Spamfilter
             }
 
         return new Classification(false, "");
+    }
+
+    private bool StringContainsNonLatinUnicodeCharacters(string text)
+    {
+        var bytes = Encoding.UTF8.GetBytes(text);
+        // the non-latin unicode characters start at C2 80. Some spammers use this to hide their spam.
+        // for more info see https://www.charset.org/utf-8 or https://en.wikipedia.org/wiki/UTF-8
+        return text.Any(x => x > 0xC1);
     }
 
     private string RemoveAllPunctuationCharactersFrom(string name)
