@@ -85,4 +85,5 @@ public class SpamfilterSettings
     public string[]           SenderWhitelist                             { get; set; } = new string[0];
     public string[]           SenderBlacklist                             { get; set; } = new string[0];
     public string[]           SubjectBlacklist                            { get; set; } = new string[0];
+    public string[]           GeneralBlacklist                            { get; set; } = new string[0];
 }                             

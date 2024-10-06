@@ -1,4 +1,4 @@
 ﻿{
     CheckIntervalMinutes            : 1,
-    SpamfilterRules                 : "N:\\_Spamfilter\\Configuration.hjson"
+    SpamfilterRules                 : "T:\\_Spamfilter\\Configuration.hjson"
 }

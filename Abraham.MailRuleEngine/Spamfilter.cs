@@ -267,8 +267,7 @@ public class Spamfilter
     private bool ProcessGeneralRule(Rule rule, Message email, AccountDTO dto)
     {
         var ipAddresses   = ExtractReceivedFromIPAddresses(email);
-        var senderName    = email.Msg.From.ToString();
-        var senderAddress = email.Msg.From.ToString();
+        (var senderName, var senderAddress) = SplitSenderFrom(email.Msg.From.ToString());
         var receiver      = email.Msg.To.ToString();
         var subject       = email.Msg.Subject ?? "";
         var body          = email.Msg.GetTextBody(TextFormat.Html)
@@ -304,6 +303,33 @@ public class Spamfilter
 
         var oneActionWasDone = ExecuteAllRuleActions(rule, email, dto, reasons);
         return oneActionWasDone;
+    }
+
+    /// <summary>
+    /// Splits a string containing a typical sender information in format ["john doe" <johndoe@outlook.com>]
+    /// It will return the tuple ("john doe", "johndoe@outlook.com")
+    /// </summary>
+    private (string, string) SplitSenderFrom(string from)
+    {
+        int posFirstQuotationMark = from.IndexOf('"');
+        if (posFirstQuotationMark < 0)
+            return (from,from);
+
+        int posSecondQuotationMark = from.IndexOf('"', posFirstQuotationMark+2);
+        if (posSecondQuotationMark < 0)
+            return (from,from);
+
+        int posFirstBracket = from.IndexOf('<', posSecondQuotationMark+1);
+        if (posFirstBracket < 0)
+            return (from,from);
+
+        int posSecondBracket = from.IndexOf('>', posFirstBracket+2);
+        if (posSecondBracket < 0)
+            return (from,from);
+
+        var name  = from.Substring(posFirstQuotationMark+1, (posSecondQuotationMark-posFirstQuotationMark-1));
+        var email = from.Substring(posFirstBracket+1, (posSecondBracket-posFirstBracket-1));
+        return (name, email);
     }
 
     private bool MailContainsOneOfTheWordInList(List<string> wordList, string part, string partName, ref string reasons)
@@ -650,7 +676,11 @@ public class Spamfilter
 
         var senderNameWithoutPunctuation = RemoveAllPunctuationCharactersFrom(senderName);
         var subjectWithoutPunctuation    = RemoveAllPunctuationCharactersFrom(subject);
-        var senderEmailAllLower = senderEMail.ToLower();
+        var senderEmailAllLower          = senderEMail.ToLower();
+        var senderNameAllLower           = senderName.ToLower();
+        var senderEmailFormatted         = RemoveAllUmlautsAndAccents(senderEmailAllLower);
+        var senderNameFormatted          = RemoveAllUmlautsAndAccents(senderNameAllLower);
+        var subjectFormatted             = RemoveAllUmlautsAndAccents(subject.ToLower());
 
         if (StringContainsNonLatinUnicodeCharacters(senderEMail))
         {
@@ -716,33 +746,96 @@ public class Spamfilter
             return new Classification(true, $"Too many unallowed special characters in subject ({specialCharactersSubject2.Details})");
         }
 
-        var senderNameAllLower = senderName.ToLower();
-        foreach (var blacklistWord in settings.SenderBlacklist)
-        {
-            if (senderNameAllLower.Contains(blacklistWord.ToLower()))
-            {
-                return new Classification(true, $"Sender contains a blacklisted word ('{blacklistWord}' in '{senderNameAllLower}')");
-            }
-        }
 
         foreach (var blacklistWord in settings.SenderBlacklist)
         {
-            if (senderEmailAllLower.Contains(blacklistWord.ToLower()))
+            var blacklistWordFormatted = RemoveAllUmlautsAndAccents(blacklistWord.ToLower());
+
+            if (StringContains(senderNameFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Sender contains a blacklisted word ('{blacklistWord}' in '{senderNameAllLower}')");
+                return new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')");
+            }
+            if (StringContains(senderEmailFormatted, blacklistWordFormatted))
+            {
+                return new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')");
             }
         }
 
-        if (subject != null)
+
+        if (!string.IsNullOrWhiteSpace(subjectFormatted))
+        {
             foreach (var blacklistWord in settings.SubjectBlacklist)
             {
-                if (subject.ToLower().Contains(blacklistWord.ToLower()))
+                var blacklistWordFormatted = RemoveAllUmlautsAndAccents(blacklistWord.ToLower());
+                if (StringContains(subjectFormatted, blacklistWordFormatted))
                 {
-                    return new Classification(true, $"Subject contains a blacklisted word ('{blacklistWord}' in '{subject}')");
+                    return new Classification(true, $"Subject contains a blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')");
                 }
             }
+        }
+
+
+        foreach (var blacklistWord in settings.GeneralBlacklist)
+        {
+            var blacklistWordFormatted = RemoveAllUmlautsAndAccents(blacklistWord.ToLower());
+
+            if (StringContains(senderNameFormatted, blacklistWordFormatted))
+            {
+                return new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')");
+            }
+            if (StringContains(senderEmailFormatted, blacklistWordFormatted))
+            {
+                return new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')");
+            }
+            if (!string.IsNullOrWhiteSpace(subjectFormatted) && 
+                StringContains(subjectFormatted, blacklistWordFormatted))
+            {
+                return new Classification(true, $"Subject contains the blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')");
+            }
+        }
 
         return new Classification(false, "");
+    }
+
+    private bool StringContains(string text, string part)
+    {
+        try
+        {
+            if (part.StartsWith('[') && part.Contains('*') && part.EndsWith(']'))
+            {
+                var expresion = part.TrimStart('[').TrimEnd(']');
+                var parts = expresion.Split(new char[] { '*' });
+                var left = parts[0];
+                var right = parts[1];
+                int posLeft = text.IndexOf(left);
+                if (posLeft != -1)
+                {
+                    int leftLength = posLeft+left.Length;
+                    if (leftLength > 0)
+                    {
+                        int posRight = text.IndexOf(right, leftLength);
+                        return posRight != -1;
+                    }
+                }
+                return false;
+            }
+
+            return text.Contains(part);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    private static string RemoveAllUmlautsAndAccents(string text)
+    {
+        return text.Replace("ä", "ae").Replace("ö", "oe").Replace("ü", "ue")
+                   .Replace("Ä", "AE").Replace("Ö", "OE").Replace("Ü", "UE")
+                   .Replace("ß", "ss")
+                   .Replace("á", "a").Replace("à", "a")
+                   .Replace("é", "e").Replace("è", "e")
+                   .Replace("-", "").Replace("_", "").Replace(" ", "");
     }
 
     private bool StringContainsNonLatinUnicodeCharacters(string text)
