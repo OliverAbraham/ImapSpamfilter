@@ -1,7 +1,7 @@
-﻿using Abraham.ProgramSettingsManager;
-using Abraham.Scheduler;
-using NLog.Web;
+﻿using Abraham.HomenetFramework;
+using Abraham.ProgramSettingsManager;
 using CommandLine;
+using NLog;
 using Abraham.MailRuleEngine;
 
 namespace ImapSpamfilter;
@@ -57,66 +57,100 @@ namespace ImapSpamfilter;
 public class Program
 {
     #region ------------- Fields --------------------------------------------------------------
-	private static CommandLineOptions                    _commandLineOptions                = new CommandLineOptions();
-    private static ProgramSettingsManager<Configuration> _programSettingsManager            = new ProgramSettingsManager<Configuration>();
-    private static Configuration                         _config                            = new();
-    private static NLog.Logger                           _logger                            = NLogBuilder.ConfigureNLog("").GetCurrentClassLogger();
-    private static Scheduler?                            _scheduler;
-    private static DateTime                              _spamfilterConfigFileLastWriteTime = default(DateTime);
-    private static Spamfilter?                           _spamfilter;
-    private static bool                                  _thisIsTheFirstTime                = true;
+    private static Framework<CommandLineArguments,Configuration,StateFile> F = new();
+    private static DateTime    _spamfilterConfigFileLastWriteTime = default(DateTime);
+    private static Spamfilter? _spamfilter;
+    private static bool        _thisIsTheFirstTime = true;
     #endregion
 
 
 
     #region ------------- Command line options ------------------------------------------------
-    class CommandLineOptions
-	    {
-	        [Option('c', "config", Default = "appsettings.hjson", Required = false, HelpText = 
-	            """
-	            Configuration file (full path and filename).
-	            If you don't specify this option, the program will expect your configuration file 
-	            named 'appsettings.hjson' in your program folder.
-	            You can specify a different location.
-	            You can use Variables for special folders, like %APPDATA%.
-	            Please refer to the documentation of my nuget package https://github.com/OliverAbraham/Abraham.ProgramSettingsManager
-	            """)]
-	        public string ConfigurationFile { get; set; } = "";
+    class CommandLineArguments
+    {
+        [Option('c', "config", Default = "appsettings.hjson", Required = false, HelpText = 
+            """
+            Configuration file (full path and filename).
+            If you don't specify this option, the program will expect your configuration file 
+            named 'appsettings.hjson' in your program folder.
+            You can specify a different location.
+            You can use Variables for special folders, like %APPDATA%.
+            Please refer to the documentation of my nuget package https://github.com/OliverAbraham/Abraham.ProgramSettingsManager
+            """)]
+        public string ConfigurationFile { get; set; } = "";
 
-	        [Option('n', "nlogconfig", Default = "nlog.config", Required = false, HelpText = 
-	            """
-	            NLOG Configuration file (full path and filename).
-	            If you don't specify this option, the program will expect your configuration file 
-	            named 'nlog.config' in your program folder.
-	            You can specify a different location.
-	            """)]
+        [Option('n', "nlogconfig", Default = "nlog.config", Required = false, HelpText = 
+            """
+            NLOG Configuration file (full path and filename).
+            If you don't specify this option, the program will expect your configuration file 
+            named 'nlog.config' in your program folder.
+            You can specify a different location.
+            """)]
         public string NlogConfigurationFile { get; set; } = "";
-	
-	        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
-	        public bool Verbose { get; set; }
-	    }
-	
-	    #endregion
+
+	    [Option('n', "statefile", Default = "state.json", Required = false, HelpText = 
+	        """
+	        File that contains the current program stare (full path and filename).
+	        """)]
+	    public string StateFile { get; set; } = "";
+
+        [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages.")]
+        public bool Verbose { get; set; }
+    }
+
+    #endregion
+
+
+
+    #region ------------- State file --------------------------------------------------------------
+    /// <summary>
+    /// Stores a set of dynamic data. Contents is read a application start and saved when ending.
+    /// Add your properties here.
+    /// </summary>
+    public class StateFile
+    {
+        public List<Spamfilter.Blocking> BlockedSenders { get; set; }
+
+        public StateFile()
+        {
+            BlockedSenders = new List<Spamfilter.Blocking>();
+        }
+    }
+	#endregion
 
 
 
     #region ------------- Init ----------------------------------------------------------------
     public static void Main(string[] args)
     {
-	    ParseCommandLineArguments();
-	    ReadConfiguration();
-        ValidateConfiguration();
-        InitLogger();
-        PrintGreeting();
-        LogConfiguration();
-        LoadStateFile();
-        HealthChecks();
-        StartScheduler();
-
+        Init();
         Run();
+        Cleanup();
+    }
 
-        StopScheduler();
-        SaveStateFile();
+    private static void Init()
+    {
+        F.ParseCommandLineArguments();
+        F.ReadConfiguration(F.CommandLineArguments.ConfigurationFile);
+        F.ValidateConfiguration();
+        F.InitLogger(F.CommandLineArguments.NlogConfigurationFile);
+        PrintGreeting();
+        HealthChecks();
+        F.ReadStateFile(F.CommandLineArguments.StateFile);
+        F.StartBackgroundWorker(ProcessRulesPeriodically, F.Config.CheckIntervalMinutes * 60);
+    }
+
+    private static void Run()
+    {
+        F.Logger.Debug($"Background worker was started. Press any key to end the application.");
+        Console.ReadKey();
+    }
+
+    private static void Cleanup()
+    {
+        F.StopBackgroundJob();
+        F.State.BlockedSenders = _spamfilter.BlockedSenders;
+        F.SaveStateFile(F.CommandLineArguments.StateFile);
     }
     #endregion
 
@@ -130,143 +164,44 @@ public class Program
 
 
 
-    #region ------------- Configuration -------------------------------------------------------
-	    private static void ParseCommandLineArguments()
-	    {
-	        string[] args = Environment.GetCommandLineArgs();
-	        CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args)
-	            .WithParsed   <CommandLineOptions>(options => { _commandLineOptions = options; })
-	            .WithNotParsed<CommandLineOptions>(errors  => { Console.WriteLine(errors.ToString()); });
-        
-        if (_commandLineOptions is null)
-            throw new Exception();
-	    }
-	
-	    private static void ReadConfiguration()
-    {
-        // ATTENTION: When loading fails, you probably forgot to set the properties of appsettings.hjson to "copy if newer"!
-        // ATTENTION: or you have an error in your json file
-	        _programSettingsManager = new ProgramSettingsManager<Configuration>()
-        .UseFullPathAndFilename(_commandLineOptions.ConfigurationFile)
-        //.UsePathRelativeToSpecialFolder(_commandLineOptions.ConfigurationFile)
-        .Load();
-        _config = _programSettingsManager.Data;
-        Console.WriteLine($"Loaded configuration file '{_programSettingsManager.ConfigFilename}'");
-    }
-
-    private static void ValidateConfiguration()
-    {
-        // ATTENTION: When validating fails, you missed to enter a value for a property in your json file
-        _programSettingsManager.Validate();
-        Console.WriteLine($"Validated configuration file.");
-    }
-
-    private static void SaveConfiguration()
-    {
-        _programSettingsManager.Save(_programSettingsManager.Data);
-    }
-    #endregion
-
-
-
-    #region ------------- State file ----------------------------------------------------------
-    private static void LoadStateFile()
-    {
-        throw new NotImplementedException();
-    }
-
-    private static void SaveStateFile()
-    {
-        throw new NotImplementedException();
-    }
-    #endregion
-
-
     #region ------------- Logging -------------------------------------------------------------
-    private static void InitLogger()
-    {
-        try
-        {
-            _logger = NLogBuilder.ConfigureNLog(_commandLineOptions.NlogConfigurationFile).GetCurrentClassLogger();
-            if (_logger is null)
-                throw new Exception();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error initializing our logger with the configuration file {_commandLineOptions.NlogConfigurationFile}. More info: {ex}");
-            throw;  // ATTENTION: When you come here, you probably forgot to set the properties of nlog.config to "copy if newer"!
-        }
-        Console.WriteLine($"Initialized the logger.");
-    }
-
     /// <summary>
     /// To generate text like this, use https://onlineasciitools.com/convert-text-to-ascii-art
     /// </summary>
     private static void PrintGreeting()
     {
-        _logger.Debug("");
-        _logger.Debug("");
-        _logger.Debug("");
-        _logger.Debug(@"---------------------------------------------------------");
-        _logger.Debug(@"     _____                        __ _ _ _               ");
-        _logger.Debug(@"    / ____|                      / _(_) | |              ");
-        _logger.Debug(@"   | (___  _ __   __ _ _ __ ___ | |_ _| | |_ ___ _ __    ");
-        _logger.Debug(@"    \___ \| '_ \ / _` | '_ ` _ \|  _| | | __/ _ \ '__|   ");
-        _logger.Debug(@"    ____) | |_) | (_| | | | | | | | | | | ||  __/ |      ");
-        _logger.Debug(@"   |_____/| .__/ \__,_|_| |_| |_|_| |_|_|\__\___|_|      ");
-        _logger.Debug(@"          | |                                            ");
-        _logger.Debug(@"          |_|                                            ");
-        _logger.Debug(@"                                                         ");
-        _logger.Info($"Spamfilter started, Version {AppVersion.Version.VERSION}  ");
-        _logger.Debug(@"---------------------------------------------------------");
+        F.Logger.Debug("");
+        F.Logger.Debug("");
+        F.Logger.Debug("");
+        F.Logger.Debug(@"---------------------------------------------------------");
+        F.Logger.Debug(@"     _____                        __ _ _ _               ");
+        F.Logger.Debug(@"    / ____|                      / _(_) | |              ");
+        F.Logger.Debug(@"   | (___  _ __   __ _ _ __ ___ | |_ _| | |_ ___ _ __    ");
+        F.Logger.Debug(@"    \___ \| '_ \ / _` | '_ ` _ \|  _| | | __/ _ \ '__|   ");
+        F.Logger.Debug(@"    ____) | |_) | (_| | | | | | | | | | | ||  __/ |      ");
+        F.Logger.Debug(@"   |_____/| .__/ \__,_|_| |_| |_|_| |_|_|\__\___|_|      ");
+        F.Logger.Debug(@"          | |                                            ");
+        F.Logger.Debug(@"          |_|                                            ");
+        F.Logger.Debug(@"                                                         ");
+        F.Logger.Info($"Spamfilter started, Version {AppVersion.Version.VERSION}  ");
+        F.Logger.Debug(@"---------------------------------------------------------");
     }
 
     private static void LogConfiguration()
     {
-        _logger.Debug($"");
-        _logger.Debug($"");
-        _logger.Debug($"");
-        _logger.Debug($"------------ Configuration -------------------------------------------");
-        _logger.Debug($"Loaded from file                  : {_programSettingsManager.ConfigFilename}");
-        _programSettingsManager.Data.LogOptions(_logger);
-    }
-    #endregion
-
-
-
-    #region ------------- Periodic actions ----------------------------------------------------
-    private static void StartScheduler()
-    {
-        _spamfilter = new Spamfilter()
-            .UseLogger(_logger.Error, _logger.Warn, _logger.Info, _logger.Debug);
-
-        _scheduler = new Scheduler()
-            .UseAction(() => PeriodicJob())
-            .UseFirstStartRightNow()
-            .UseIntervalMinutes(_config.CheckIntervalMinutes)
-            .Start();
-    }
-
-    private static void StopScheduler()
-    {
-        _scheduler?.Stop();
-    }
-
-    private static void PeriodicJob()
-    {
-        ProcessRules();
+        F.Logger.Debug($"");
+        F.Logger.Debug($"");
+        F.Logger.Debug($"");
+        F.Logger.Debug($"------------ Configuration -------------------------------------------");
+        F.Logger.Debug($"Loaded from file                  : {F.ProgramSettingsManager.ConfigFilename}");
+        F.ProgramSettingsManager.Data.LogOptions(F.Logger);
     }
     #endregion
 
 
 
     #region ------------- Domain logic --------------------------------------------------------
-    private static void Run()
-    {
-        Console.ReadKey();
-    }
-
-    private static void ProcessRules()
+    private static void ProcessRulesPeriodically()
     {
         try
         {
@@ -274,7 +209,7 @@ public class Program
         }
         catch (Exception ex) 
         {
-            _logger.Error($"Error with the imap server: {ex}");
+            F.Logger.Error($"Error with the imap server: {ex}");
         }
     }
 
@@ -286,25 +221,35 @@ public class Program
 
     private static void LoadOrReloadRules()
     {
+        if (_thisIsTheFirstTime)
+        {
+            _spamfilter = new Spamfilter()
+                .UseLogger(F.Logger.Error, F.Logger.Warn, F.Logger.Info, F.Logger.Debug);
+            _spamfilter.BlockedSenders = F.State.BlockedSenders;
+        }
+
+
         // If the config file was changed, we re-read it and process all unread mails in the inbox
         // Already processed unread emails will be re-processed when you changes the rules.
-        // Thats handy because you don't have to restart the application after you changed a rule.
-        var currentWriteTime = File.GetLastWriteTime(_config.SpamfilterRules);
+        // That's handy because you don't have to restart the application after you changed a rule.
+        // You can simply edit the configuration file and save it.
+
+        var currentWriteTime = File.GetLastWriteTime(F.Config.SpamfilterRules);
         var configFileHasChanged = currentWriteTime != _spamfilterConfigFileLastWriteTime;
 
         if (_thisIsTheFirstTime || configFileHasChanged)
         {
             if (!_thisIsTheFirstTime)
-                _logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
+                F.Logger.Debug("Re-loading the spamfilter rules from file '_config.SpamfilterRules' because the file was changed");
 
-            _spamfilter?.LoadConfigurationFromFile(_config.SpamfilterRules);
+            _spamfilter?.LoadConfigurationFromFile(F.Config.SpamfilterRules);
             _spamfilterConfigFileLastWriteTime = currentWriteTime;
 
             _spamfilter?.InitSpamhausResolver();
             _spamfilter?.ForgetAlreadyProcessedEmails();
 
             if (_thisIsTheFirstTime)
-                _spamfilter?.Configuration.LogOptions(_logger.Debug);
+                _spamfilter?.Configuration.LogOptions(F.Logger.Debug);
 
             _thisIsTheFirstTime = false;
         }

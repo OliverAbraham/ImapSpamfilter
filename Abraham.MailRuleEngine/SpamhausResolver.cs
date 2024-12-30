@@ -90,8 +90,8 @@ public class SpamhausResolver
         {
             var lookup = new LookupClient(NameserverV4)
             {
-                UseCache = false,
-                Timeout = QueryTimeout,
+                //UseCache = false,
+                //Timeout = QueryTimeout,
             };
 
             var nsLookupResult = await lookup.QueryAsync("zen.spamhaus.org", QueryType.NS);
@@ -229,8 +229,8 @@ public class SpamhausResolver
 
             var lookup = new LookupClient(SpamhausNameserver)
             {
-                UseCache = false,
-                Timeout = QueryTimeout,
+                //UseCache = false,
+                //Timeout = QueryTimeout,
             };
 
             string reverseIPAddress;

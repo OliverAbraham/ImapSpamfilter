@@ -14,14 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Abraham.ProgramSettingsManager" Version="1.0.2" />
-    <PackageReference Include="Abraham.Scheduler" Version="1.0.0" />
-    <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
-    <PackageReference Include="NLog" Version="5.0.4" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="5.0.4" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="5.1.4" />
+    <PackageReference Include="Abraham.HomenetFramework" Version="1.0.1" />
+    <PackageReference Include="NLog" Version="5.3.4" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.15" />
   </ItemGroup>
 
   <ItemGroup>

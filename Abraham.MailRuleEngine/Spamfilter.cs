@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using System.Data;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -59,6 +60,14 @@ public class Spamfilter
 {
     #region ------------- Properties ----------------------------------------------------------
     public Configuration Configuration { get; set; } = new Configuration();
+    
+    public class Blocking
+    {
+        public DateTime Date    { get; set; }
+        public string   Address { get; set; }
+    }
+
+    public List<Blocking> BlockedSenders { get; set; } = new();
     #endregion
 
 
@@ -67,11 +76,11 @@ public class Spamfilter
     internal class AccountDTO
     {
         public MailAccount        Account     { get; init; }
-        public ImapClient         Client      { get; init; }
+        public IImapClient        Client      { get; init; }
         public List<IMailFolder>? Folders     { get; set; } = null;
         public IMailFolder?       InboxFolder { get; set; } = null;
 
-        public AccountDTO(MailAccount account, ImapClient client)
+        public AccountDTO(MailAccount account, IImapClient client)
         {
             Account = account;
             Client = client;
@@ -388,7 +397,7 @@ public class Spamfilter
         {
             reasons += $"mail is SPAM ({classification.Reason})";
             if (rule.BlockSenderAddress)
-                BlockAddress(senderAddress);
+                BlockAddress(senderAddress, rule.BlockTimeInDays);
             return true;
         }
         return false;
@@ -396,11 +405,28 @@ public class Spamfilter
 
     private bool AddressIsBlocked(string senderAddress)
     {
-        return false;
-    }
+        var entry = BlockedSenders.LastOrDefault(x => x.Address == senderAddress);
+            
+        bool senderIsBlocked = (entry is not null && entry.Date > DateTime.Now);
 
-    private void BlockAddress(string senderAddress)
+        return senderIsBlocked;
+    }
+    
+    private void BlockAddress(string senderAddress, int blockTimeInDays)
     {
+        var entry = BlockedSenders.LastOrDefault(x => x.Address == senderAddress);
+        if (entry is null)
+        {
+            entry = new Blocking { Address = senderAddress, Date = DateTime.Now.AddDays(blockTimeInDays) };
+            BlockedSenders.Add(entry);
+
+            _infoLogger($"    - Sender '{senderAddress}' will be blocked now for {blockTimeInDays} days, until {entry.Date}");
+        }
+        else
+        {
+            entry.Date = DateTime.Now.AddDays(blockTimeInDays);
+           _infoLogger($"    - Sender '{senderAddress}' was already blocked, block time extended for another {blockTimeInDays} days, until {entry.Date}");
+        }
     }
 
     private void WriteAiTrainingFile(string subject, string body, string senderName, string senderAddress, string classification)
@@ -670,7 +696,7 @@ public class Spamfilter
         return $"Error getting the folder named '{name}' from your imap server. Existing folders are: {allImapFolders}";
     }
 
-    private void ClosePostbox(ImapClient? client)
+    private void ClosePostbox(IImapClient? client)
     {
         client?.Close();
     }
