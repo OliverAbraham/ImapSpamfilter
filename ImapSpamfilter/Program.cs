@@ -156,6 +156,7 @@ namespace ImapSpamfilter
         {
             // ATTENTION: When validating fails, you missed to enter a value for a property in your json file
             _programSettingsManager.Validate();
+            Console.WriteLine($"Validated configuration file.");
         }
 
         private static void SaveConfiguration()
@@ -180,6 +181,7 @@ namespace ImapSpamfilter
                 Console.WriteLine($"Error initializing our logger with the configuration file {_commandLineOptions.NlogConfigurationFile}. More info: {ex}");
                 throw;  // ATTENTION: When you come here, you probably forgot to set the properties of nlog.config to "copy if newer"!
             }
+            Console.WriteLine($"Initialized the logger.");
         }
 
         /// <summary>
