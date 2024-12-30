@@ -7,7 +7,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ImapSpamfilter", "ImapSpamf
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Abraham.MailRuleEngine", "Abraham.MailRuleEngine\Abraham.MailRuleEngine.csproj", "{10B9A2D2-1B80-4BCA-8510-8E5752521F08}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projektmappenelemente", "Projektmappenelemente", "{997BBCEA-5988-4F04-A8A5-F5194A86C342}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Abraham.MailRuleEngine.Tests", "Abraham.MailRuleEngine.Tests\Abraham.MailRuleEngine.Tests.csproj", "{C490A28C-6D9F-48BF-BF87-30FA74C5901B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 Domain Logic", "1 Domain Logic", "{D5B00CD1-E7FB-4F56-BDF2-2EEEF3BA4521}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 Application", "2 Application", "{1711B161-360A-4519-950C-5ACC2747C9CD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3 Unit tests", "3 Unit tests", "{30CB44AE-CB86-4E3F-8280-AC75227E3A00}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4 Solution items", "4 Solution items", "{349EE843-AB58-4F2E-9B71-C8C44F32C6A2}"
 	ProjectSection(SolutionItems) = preProject
 		Ciridata.ico = Ciridata.ico
 		Ciridata.png = Ciridata.png
@@ -29,9 +37,18 @@ Global
 		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10B9A2D2-1B80-4BCA-8510-8E5752521F08}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C490A28C-6D9F-48BF-BF87-30FA74C5901B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C490A28C-6D9F-48BF-BF87-30FA74C5901B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C490A28C-6D9F-48BF-BF87-30FA74C5901B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C490A28C-6D9F-48BF-BF87-30FA74C5901B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E6F4AA69-F930-4036-963B-A3D00299C0A6} = {1711B161-360A-4519-950C-5ACC2747C9CD}
+		{10B9A2D2-1B80-4BCA-8510-8E5752521F08} = {D5B00CD1-E7FB-4F56-BDF2-2EEEF3BA4521}
+		{C490A28C-6D9F-48BF-BF87-30FA74C5901B} = {30CB44AE-CB86-4E3F-8280-AC75227E3A00}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {756F5218-826F-4941-AB2C-EC25084109EE}
