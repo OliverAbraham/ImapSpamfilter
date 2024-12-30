@@ -49,6 +49,8 @@ public class Rule
     public List<FilterAction>? Actions                                    { get; set; } = null;
     public SpamfilterSettings? SpamfilterSettings                         { get; set; } = null;
     public bool               StopAfterAction                             { get; set; } = false;
+    public bool               BlockSenderAddress                          { get; set; } = false;
+    public int                BlockTimeInDays                             { get; set; } = 365;
 }
 
 public class FilterAction

@@ -109,12 +109,14 @@ namespace ImapSpamfilter
             InitLogger();
             PrintGreeting();
             LogConfiguration();
+            LoadStateFile();
             HealthChecks();
             StartScheduler();
 
             Run();
 
             StopScheduler();
+            SaveStateFile();
         }
         #endregion
 
@@ -165,6 +167,19 @@ namespace ImapSpamfilter
         }
         #endregion
 
+
+
+        #region ------------- State file ----------------------------------------------------------
+        private static void LoadStateFile()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void SaveStateFile()
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
 
 
         #region ------------- Logging -------------------------------------------------------------

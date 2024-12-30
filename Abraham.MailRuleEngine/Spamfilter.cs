@@ -7,8 +7,11 @@ using MimeKit.Text;
 using Newtonsoft.Json;
 using System.Data;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+
+[assembly: InternalsVisibleTo("Abraham.MailRuleEngine.Tests")]
 
 namespace Abraham.MailRuleEngine;
 
@@ -61,7 +64,7 @@ public class Spamfilter
 
 
     #region ------------- Fields --------------------------------------------------------------
-    private class AccountDTO
+    internal class AccountDTO
     {
         public MailAccount        Account     { get; init; }
         public ImapClient         Client      { get; init; }
@@ -264,7 +267,7 @@ public class Spamfilter
 
 
     #region ------------- General rule ------------------------------------------------------------
-    private bool ProcessGeneralRule(Rule rule, Message email, AccountDTO dto)
+    internal bool ProcessGeneralRule(Rule rule, Message email, AccountDTO dto)
     {
         var ipAddresses   = ExtractReceivedFromIPAddresses(email);
         (var senderName, var senderAddress) = SplitSenderFrom(email.Msg.From.ToString());
@@ -353,6 +356,10 @@ public class Spamfilter
     private bool MailContainsSpam(Rule rule, List<IPAddress> ipAddresses, string senderName,
                                   string senderAddress, string subject, string body, ref string reasons)
     {
+        if (rule.BlockSenderAddress)
+            if (AddressIsBlocked(senderAddress))
+                return true;
+
         var specificSettingsAreSetForThisAccount =
             rule.SpamfilterSettings is not null &&
             !string.IsNullOrWhiteSpace(rule.SpamfilterSettings.SpecialCharacterWhitelist);
@@ -380,9 +387,20 @@ public class Spamfilter
         if (classification.EmailIsSpam)
         {
             reasons += $"mail is SPAM ({classification.Reason})";
+            if (rule.BlockSenderAddress)
+                BlockAddress(senderAddress);
             return true;
         }
         return false;
+    }
+
+    private bool AddressIsBlocked(string senderAddress)
+    {
+        return false;
+    }
+
+    private void BlockAddress(string senderAddress)
+    {
     }
 
     private void WriteAiTrainingFile(string subject, string body, string senderName, string senderAddress, string classification)

@@ -19,7 +19,9 @@
 			IfMailIsSpam      			: true,
 			Actions           			: [ { Type: "MoveToFolder", Folder: "junk" } ],
 			StopAfterAction             : true,
-			SpamfilterSettings			: {}
+			SpamfilterSettings			: {},
+			BlockSenderAddress          : true,
+			BlockTimeInDays             : 365,
 		},
 		{
 			Name              			: "Forward emails",
@@ -42,6 +44,7 @@
         SpecialCharactersSenderEmailThreshold: 0,
         SpecialCharactersSenderNameThreshold : 0,
         SpecialCharactersSubjectThreshold    : 0,
+        NonLatinCharactersSubjectThreshold   : 0,
 
         SenderWhitelist: 
 	    [
