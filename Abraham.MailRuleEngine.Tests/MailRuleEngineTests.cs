@@ -82,8 +82,12 @@ namespace Abraham.MailRuleEngine.Tests
         {
             var from    = new MailboxAddress(fromName, fromAddr);
             var to      = new MailboxAddress(toName, toAddr);
-            var body    = new MailKit.BodyPartBasic();
-            var message = new Abraham.Mail.Message(new MailKit.UniqueId(), new MimeMessage(from, to, subject, body));
+            var mimeMessage = new MimeMessage();
+            mimeMessage.From.Add(from);
+            mimeMessage.To.Add(to);
+            mimeMessage.Subject = subject;
+            mimeMessage.Body = new TextPart("plain") { Text = string.Empty };
+            var message = new Abraham.Mail.Message(new MailKit.UniqueId(), mimeMessage);
             return message;
         }
         #endregion

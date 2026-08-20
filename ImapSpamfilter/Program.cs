@@ -68,7 +68,7 @@ public class Program
     #region ------------- Command line options ------------------------------------------------
     class CommandLineArguments
     {
-        [Option('c', "config", Default = "appsettings.hjson", Required = false, HelpText = 
+        [Option('c', "config", Default = "/Config/appsettings.json", Required = false, HelpText = 
             """
             Configuration file (full path and filename).
             If you don't specify this option, the program will expect your configuration file 
@@ -79,7 +79,7 @@ public class Program
             """)]
         public string ConfigurationFile { get; set; } = "";
 
-        [Option('n', "nlogconfig", Default = "nlog.config", Required = false, HelpText = 
+        [Option('n', "nlogconfig", Default = "/Config/NLog.config", Required = false, HelpText = 
             """
             NLOG Configuration file (full path and filename).
             If you don't specify this option, the program will expect your configuration file 
@@ -142,8 +142,25 @@ public class Program
 
     private static void Run()
     {
-        F.Logger.Debug($"Background worker was started. Press any key to end the application.");
-        Console.ReadKey();
+        if (Console.IsInputRedirected)
+        {
+        	F.Logger.Debug($"Background worker was started. Press any key to end the application.");
+            do
+            {
+                Thread.Sleep(10 * 1000);
+            }
+            while (true);
+
+        }
+        else
+        {
+            F.Logger.Debug("Press any key to end the application.");
+            do
+            {
+                Thread.Sleep(10 * 1000);
+            }
+            while (!Console.KeyAvailable);
+        }
     }
 
     private static void Cleanup()
