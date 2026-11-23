@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
 using MimeKit.Text;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Crypto.Digests;
 using System.Data;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -552,7 +553,7 @@ public class Spamfilter
         
         try
         {
-            var folder = dto.Client.GetFolderByName(dto.Folders, action.Folder);
+            IMailFolder? folder = GetFolderByNameIncludingSubfolders(action, dto);
             if (folder is null)
                 throw new Exception();
 
@@ -565,6 +566,21 @@ public class Spamfilter
             _errorLogger($"Cannot move the email, because the folder named '{action.Folder}' does not exist. Please check your rule action. More info: {ex}");
             throw;
         }
+    }
+
+    private static IMailFolder GetFolderByNameIncludingSubfolders(FilterAction action, AccountDTO dto)
+    {
+        var folderNames = action.Folder.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        IMailFolder? folder = dto.Client.GetFolderByName(dto.Folders, folderNames[0]);
+
+        foreach (var folderName in folderNames.Skip(1))
+        {
+            folder = folder?.GetSubfolders(false).FirstOrDefault(subfolder => subfolder.Name == folderName);
+            if (folder is null)
+                break;
+        }
+
+        return folder;
     }
 
     private bool ForwardEmail(FilterAction action, Rule rule, Message email, AccountDTO dto, string reason)
@@ -726,14 +742,28 @@ public class Spamfilter
         var senderNameFormatted          = RemoveAllUmlautsAndAccents(senderNameAllLower);
         var subjectFormatted             = RemoveAllUmlautsAndAccents(subject.ToLower());
 
+        var score = 0;
+        var results = new List<Classification>();
+
         if (StringContainsNonLatinUnicodeCharacters(senderEMail))
         {
-            return new Classification(true, $"Non-latin characters in sender email. They might look like latin! ({senderEMail})");
+            score++;
+            results.Add(new Classification(true, $"Non-latin characters in sender email. They might look like latin! ({senderEMail})"));
         }
 
         if (StringContainsNonLatinUnicodeCharacters(senderName))
         {
-            return new Classification(true, $"Non-latin characters in sender name. They might look like latin! ({senderName})");
+            score++;
+            results.Add(new Classification(true, $"Non-latin characters in sender name. They might look like latin! ({senderName})"));
+        }
+
+        if (senderName.Contains("1blu") || senderEmailAllLower.Contains("1blu"))
+        {
+            if (!senderEmailAllLower.Contains(senderNameAllLower))
+            {
+                score++;
+                results.Add(new Classification(true, $"The Sender name and Sender Email are different! Name='{senderNameAllLower}' Email='{senderEmailAllLower}'"));
+            }
         }
 
         foreach(var sender in settings.SenderWhitelist)
@@ -748,7 +778,10 @@ public class Spamfilter
             {
                 (var blacklisted, var list) = IpIsBlacklistedbySpamhaus(ip);
                 if (blacklisted)
-                    return new Classification(true, $"Sender IP is blacklisted: {ip} on list {list}");
+                {
+                    score++;
+                    results.Add(new Classification(true, $"Sender IP is blacklisted: {ip} on list {list}"));
+                }
             }
         }
 
@@ -757,37 +790,43 @@ public class Spamfilter
         var countNonLatinCharacters = CalculateNonWhiteListCharacterCount(subject, settings);
         if (countNonLatinCharacters > settings.NonLatinCharactersSubjectThreshold)
         {
-            return new Classification(true, $"Too many unallowed non-latin characters in subject ({countNonLatinCharacters} of {countTotal})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed non-latin characters in subject ({countNonLatinCharacters} of {countTotal}, characters might look normal!)"));
         }
 
         var specialCharactersSenderEmail = CalculateSpecialCharacterCount(senderEMail, settings);
         if (specialCharactersSenderEmail.Count > settings.SpecialCharactersSenderEmailThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in sender email ({specialCharactersSenderEmail.Details})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed special characters in sender email ({specialCharactersSenderEmail.Details}, characters might look normal!)"));
         }
 
         var specialCharactersSenderName1 = CalculateSpecialCharacterCount(senderName, settings);
         if (specialCharactersSenderName1.Count > settings.SpecialCharactersSenderNameThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in sender name ({specialCharactersSenderName1.Details})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed special characters in sender name ({specialCharactersSenderName1.Details}, characters might look normal!)"));
         }
 
         var specialCharactersSenderName2 = CalculateSpecialCharacterCount(senderNameWithoutPunctuation, settings);
         if (specialCharactersSenderName2.Count > settings.SpecialCharactersSenderNameThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in sender name ({specialCharactersSenderName2.Details})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed special characters in sender name ({specialCharactersSenderName2.Details}, characters might look normal!)"));
         }
 
         var specialCharactersSubject1 = CalculateSpecialCharacterCount(subject, settings);
         if (specialCharactersSubject1.Count > settings.SpecialCharactersSubjectThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in subject ({specialCharactersSubject1.Details})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed special characters in subject ({specialCharactersSubject1.Details}, characters might look normal!)"));
         }
 
         var specialCharactersSubject2 = CalculateSpecialCharacterCount(subjectWithoutPunctuation, settings);
         if (specialCharactersSubject2.Count > settings.SpecialCharactersSubjectThreshold)
         {
-            return new Classification(true, $"Too many unallowed special characters in subject ({specialCharactersSubject2.Details})");
+            score++;
+            results.Add(new Classification(true, $"Too many unallowed special characters in subject ({specialCharactersSubject2.Details}, characters might look normal!)"));
         }
 
 
@@ -797,11 +836,13 @@ public class Spamfilter
 
             if (StringContains(senderNameFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')");
+                score++;
+                results.Add(new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')"));
             }
             if (StringContains(senderEmailFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')");
+                score++;
+                results.Add(new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')")    );
             }
         }
 
@@ -813,7 +854,8 @@ public class Spamfilter
                 var blacklistWordFormatted = RemoveAllUmlautsAndAccents(blacklistWord.ToLower());
                 if (StringContains(subjectFormatted, blacklistWordFormatted))
                 {
-                    return new Classification(true, $"Subject contains a blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')");
+                    score++;
+                    results.Add(new Classification(true, $"Subject contains a blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')"));
                 }
             }
         }
@@ -825,21 +867,76 @@ public class Spamfilter
 
             if (StringContains(senderNameFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')");
+                score++;
+                results.Add(new Classification(true, $"Sender name contains a blacklisted word ('{blacklistWordFormatted}' in '{senderNameFormatted}')"));
             }
             if (StringContains(senderEmailFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')");
+                score++;
+                results.Add(new Classification(true, $"Sender email contains a blacklisted word ('{blacklistWordFormatted}' in '{senderEmailFormatted}')"));
             }
             if (!string.IsNullOrWhiteSpace(subjectFormatted) && 
                 StringContains(subjectFormatted, blacklistWordFormatted))
             {
-                return new Classification(true, $"Subject contains the blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')");
+                score++;
+                results.Add(new Classification(true, $"Subject contains the blacklisted word ('{blacklistWordFormatted}' in '{subjectFormatted}')"));
             }
         }
 
+        //if (BodyContainsSuspiciousLinks(body, senderEmailAllLower))
+        //{
+        //    score++;
+        //    classificationResults.Add(new Classification(true, $"Body contains suspicious links"));
+        //}
+
+        if (score > 0 || results.Any())
+        {
+            // combine all results into one classification result
+            var allExplanations = string.Join("; ", results.Select(r => r.Reason));
+            var allResults = $"Score {score} points: {allExplanations}";
+            return new Classification(true, allResults);
+        }
         return new Classification(false, "");
     }
+
+    //private bool BodyContainsSuspiciousLinks(string body, string senderEmailAllLower)
+    //{
+    //    if (string.IsNullOrWhiteSpace(body))
+    //        return false;
+    //
+    //    var senderDomain = senderEmailAllLower.Split('@').LastOrDefault();
+    //
+    //    const string hrefPattern = @"\bhref\s*=\s*(?:""(?<url>[^""]*)""|'(?<url>[^']*)'|(?<url>[^\s>]+))";
+    //    foreach (Match match in Regex.Matches(body, hrefPattern, RegexOptions.IgnoreCase))
+    //    {
+    //        var link = WebUtility.HtmlDecode(match.Groups["url"].Value.Trim());
+    //        if (link.StartsWith("//", StringComparison.Ordinal))
+    //            link = $"https:{link}";
+    //        else if (link.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+    //            link = $"https://{link}";
+    //
+    //        if (!Uri.TryCreate(link, UriKind.Absolute, out var uri))
+    //            continue;
+    //
+    //        if (uri.Scheme is not ("http" or "https") || string.IsNullOrEmpty(uri.Host))
+    //            continue;
+    //
+    //        var host = uri.Host.TrimEnd('.');
+    //        if (!host.EndsWith(senderDomain) &&
+    //            !host.EndsWith("googleapis.com") &&
+    //            !host.EndsWith("gstatic.com") &&
+    //            !host.EndsWith("mailchi.mp"))
+    //        {
+    //            if (!host.Equals  (senderDomain, StringComparison.OrdinalIgnoreCase) &&
+    //                !host.EndsWith(senderDomain, StringComparison.OrdinalIgnoreCase))
+    //            {
+    //                return true;
+    //            }
+    //        }
+    //    }
+    //
+    //    return false;
+    //}
 
     private bool StringContains(string text, string part)
     {
@@ -884,10 +981,29 @@ public class Spamfilter
 
     private bool StringContainsNonLatinUnicodeCharacters(string text)
     {
-        var bytes = Encoding.UTF8.GetBytes(text);
-        // the non-latin unicode characters start at C2 80. Some spammers use this to hide their spam.
-        // for more info see https://www.charset.org/utf-8 or https://en.wikipedia.org/wiki/UTF-8
-        return text.Any(x => x > 0xC1);
+        if (string.IsNullOrEmpty(text))
+            return false;
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (Rune.IsLetterOrDigit(rune))
+                continue;
+            if (Rune.IsLetter(rune))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsLatinLetter(int codePoint)
+    {
+        return codePoint is >= 'A' and <= 'Z'
+            or >= 'a' and <= 'z'
+            or < 'A'
+            or >= 0x00C0 and <= 0x02AF
+            or >= 0x1E00 and <= 0x1EFF
+            or >= 0x2C60 and <= 0x2C7F
+            or >= 0xA720 and <= 0xA7FF;
     }
 
     private string RemoveAllPunctuationCharactersFrom(string name)

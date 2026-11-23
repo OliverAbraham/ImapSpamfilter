@@ -2,7 +2,7 @@
   "profiles": {
     "ImapSpamfilter": {
       "commandName": "Project",
-      "commandLineArgs": "--config appsettings.hjson"
+      "commandLineArgs": "--config C:\\Credentials\\Spamfilter\\appsettings.json --nlogconfig C:\\Credentials\\Spamfilter\\NLog.config"
     },
     "Container (Dockerfile)": {
       "commandName": "Docker"
